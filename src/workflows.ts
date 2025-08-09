@@ -39,9 +39,14 @@ export async function loadWorkflow(name: string): Promise<Workflow> {
 export async function listWorkflows(): Promise<string[]> {
   await ensureWorkflowDir();
   const files = await fs.readdir(WORKFLOW_DIR);
-  return files.filter(f => f.endsWith(".json")).map(f => f.replace(/\.json$/, ""));
+  return files
+    .filter((f) => f.endsWith(".json"))
+    .map((f) => f.replace(/\.json$/, ""));
 }
 
 function sanitize(s: string): string {
-  return s.toLowerCase().replace(/[^a-z0-9-_]+/g, "-").replace(/^-+|-+$/g, "");
+  return s
+    .toLowerCase()
+    .replace(/[^a-z0-9-_]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }

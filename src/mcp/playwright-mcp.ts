@@ -18,11 +18,23 @@ export class PlaywrightMCP {
     "browser_snapshot",
     "browser_type",
     "browser_wait_for",
-    "browser_select_option"
+    "browser_select_option",
   ];
 
+  constructor() {
+    process.on("SIGINT", () => {
+      this.disconnect();
+    });
+    process.on("SIGTERM", () => {
+      this.disconnect();
+    });
+  }
+
   async connect(): Promise<void> {
-    const client = new MCPClient({ command: PLAYWRIGHT_MCP.command, args: PLAYWRIGHT_MCP.args });
+    const client = new MCPClient({
+      command: PLAYWRIGHT_MCP.command,
+      args: PLAYWRIGHT_MCP.args,
+    });
     await client.connect();
     this.client = client;
   }
@@ -62,9 +74,9 @@ export class PlaywrightMCP {
     for (const t of tools) {
       map[t.name] = tool({
         description: t.description ?? `MCP tool ${t.name}`,
-        inputSchema: (t.inputSchema ? jsonSchema(t.inputSchema as any) : z
-          .record(z.any())
-          .describe("Arguments for the MCP tool call")),
+        inputSchema: t.inputSchema
+          ? jsonSchema(t.inputSchema as any)
+          : z.record(z.any()).describe("Arguments for the MCP tool call"),
         execute: async (options: any) => {
           const input = options?.input ?? options ?? {};
           return this.callTool(t.name, input);
@@ -79,5 +91,3 @@ export class PlaywrightMCP {
     return this.buildAiTools(tools);
   }
 }
-
-

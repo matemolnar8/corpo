@@ -5,6 +5,7 @@ import { generateText, stepCountIs } from "ai";
 import { MCPTool } from "./mcp/mcp-client.js";
 import { Workflow, WorkflowStep, saveWorkflow } from "./workflows.js";
 import { PlaywrightMCP } from "./mcp/playwright-mcp.js";
+import { printModelResult, getLogLevel } from "./utils.js";
 
 export class WorkflowRecorder {
   private mcp?: PlaywrightMCP;
@@ -89,16 +90,25 @@ export class WorkflowRecorder {
         let accepted = false;
         let refinement: string | undefined = undefined;
         while (!accepted) {
-          const prompt = `You are recording a browser automation workflow. Use the available tools to perform the user's step end-to-end.\n\nRules:\n- Keep calling tools as needed until the step is fully completed; do not stop after a single tool call.\n- Prefer: take a page snapshot -> analyze snapshot -> perform the precise action (e.g., click) using a robust selector or description.\n- If the instruction is to click text (e.g., 'Bookings' or 'leading article heading'), first snapshot and analyze to find a stable descriptor, then click using that descriptor.\n- Only when the step is fully done, output a single line starting with 'REPRO:' followed by a concise, imperative description that can reproduce this step later. This instruction should include details that help the runner, like the tools used and a description of the targeted elements.\n\nUser step: ${nl}\n${
-            refinement ? `Refinement: ${refinement}\n` : ""
-          }`;
+          const prompt = `You are recording a browser automation workflow. Use the available tools to perform the user's step end-to-end.
 
-          console.log(
-            chalk.magenta(
-              "[Recorder] About to run model for this step with the following prompt:"
-            )
-          );
-          console.log(chalk.gray(prompt));
+Rules:
+- Keep calling tools as needed until the step is fully completed; do not stop after a single tool call.
+- Prefer: take a page snapshot -> analyze snapshot -> perform the precise action (e.g., click) using a robust selector or description.
+- If the instruction is to click text (e.g., 'Bookings' or 'leading article heading'), first snapshot and analyze to find a stable descriptor, then click using that descriptor.
+- Only when the step is fully done, output a single line starting with 'REPRO:' followed by a concise, imperative description that can reproduce this step later. This instruction should include details that help the runner, like the tools used and a description of the targeted elements.
+
+User step: ${nl}
+${refinement ? `Refinement: ${refinement}` : ""}`;
+
+          if (getLogLevel() === "debug") {
+            console.log(
+              chalk.magenta(
+                "[Recorder] About to run model for this step with the following prompt:"
+              )
+            );
+            console.log(chalk.gray(prompt));
+          }
 
           const result = await generateText({
             model: this.model,
@@ -107,47 +117,8 @@ export class WorkflowRecorder {
             stopWhen: stepCountIs(10),
           });
 
-          // Display tool calls and results
-          console.log(
-            chalk.gray(
-              `[Recorder] finishReason: ${
-                (result as any).finishReason ?? "unknown"
-              }`
-            )
-          );
-          if ((result as any).usage)
-            console.log(
-              chalk.gray(
-                `[Recorder] usage: ${JSON.stringify((result as any).usage)}`
-              )
-            );
-          console.log(
-            chalk.gray(
-              `[Recorder] toolCalls: ${result.toolCalls.length}, toolResults: ${result.toolResults.length}`
-            )
-          );
-          if (result.toolCalls.length === 0) {
-            console.log(chalk.yellow("No tools were called."));
-          }
-          for (let i = 0; i < result.toolCalls.length; i += 1) {
-            const tc = result.toolCalls[i];
-            const tr = result.toolResults.find(
-              (r) => r.toolCallId === tc.toolCallId
-            );
-            console.log(
-              chalk.cyan(
-                `Executed tool ${i + 1}/${result.toolCalls.length}: ${
-                  tc.toolName
-                }`
-              )
-            );
-            console.log(
-              chalk.gray("Input:"),
-              stringifySmall((tc as any).input)
-            );
-            if (tr)
-              console.log(chalk.green("Result:"), stringifySmall(tr.output));
-          }
+          // Use shared utility to print model results
+          printModelResult(result, "Recorder");
 
           const resultText = result.text?.trim() ?? "";
           if (resultText) {
@@ -232,14 +203,5 @@ export class WorkflowRecorder {
   private buildAiTools(_tools: MCPTool[]) {
     // Kept for backward-compatibility, but runner/recorder now use PlaywrightMCP.getAiTools()
     return {} as Record<string, any>;
-  }
-}
-
-function stringifySmall(v: unknown): string {
-  try {
-    const s = JSON.stringify(v);
-    return s.length > 500 ? s.slice(0, 500) + "…" : s;
-  } catch {
-    return String(v);
   }
 }
