@@ -2,9 +2,9 @@ import inquirer from "inquirer";
 import chalk from "chalk";
 import { google } from "@ai-sdk/google";
 import { generateText, stepCountIs } from "ai";
-import { MCPTool } from "./mcp/mcp-client.js";
+import { MCPTool } from "./tools/mcp/mcp-client.js";
 import { Workflow, WorkflowStep, saveWorkflow } from "./workflows.js";
-import { PlaywrightMCP } from "./mcp/playwright-mcp.js";
+import { PlaywrightMCP } from "./tools/mcp/playwright-mcp.js";
 import { printModelResult, getLogLevel } from "./utils.js";
 
 export class WorkflowRecorder {

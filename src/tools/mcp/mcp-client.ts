@@ -6,7 +6,7 @@ import type {
   CallToolResult,
   CompatibilityCallToolResult,
 } from "@modelcontextprotocol/sdk/types";
-import pkg from "../../package.json" with { type: "json" };
+import pkg from "../../../package.json" with { type: "json" };
 
 export type MCPTool = MCPSDKTool;
 

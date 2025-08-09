@@ -3,7 +3,7 @@ import chalk from "chalk";
 import { google } from "@ai-sdk/google";
 import { generateText, stepCountIs } from "ai";
 import { loadWorkflow, listWorkflows } from "./workflows.js";
-import { PlaywrightMCP } from "./mcp/playwright-mcp.js";
+import { PlaywrightMCP } from "./tools/mcp/playwright-mcp.js";
 import { printModelResult, getLogLevel } from "./utils.js";
 
 export class WorkflowRunner {
