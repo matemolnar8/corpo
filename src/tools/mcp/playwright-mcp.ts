@@ -76,7 +76,7 @@ export class PlaywrightMCP {
         description: t.description ?? `MCP tool ${t.name}`,
         inputSchema: t.inputSchema
           ? jsonSchema(t.inputSchema as any)
-          : z.record(z.any()).describe("Arguments for the MCP tool call"),
+          : z.object({}),
         execute: async (options: any) => {
           const input = options?.input ?? options ?? {};
           return this.callTool(t.name, input);

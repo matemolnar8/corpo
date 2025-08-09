@@ -6,6 +6,7 @@ import { MCPTool } from "./tools/mcp/mcp-client.js";
 import { Workflow, WorkflowStep, saveWorkflow } from "./workflows.js";
 import { PlaywrightMCP } from "./tools/mcp/playwright-mcp.js";
 import { printModelResult, getLogLevel } from "./utils.js";
+import { userInputTool } from "./tools/user-input.js";
 
 export class WorkflowRecorder {
   private mcp?: PlaywrightMCP;
@@ -25,11 +26,16 @@ export class WorkflowRecorder {
     await this.connect();
     try {
       if (!this.mcp) throw new Error("Not connected");
-      const aiTools = await this.mcp.getAiTools();
+      const mcpTools = await this.mcp.getAiTools();
+      const allTools = {
+        ...mcpTools,
+        userInput: userInputTool,
+      };
+      
       console.log(
         chalk.gray(
           `[Recorder] Exposed tools: ${
-            Object.keys(aiTools).join(", ") || "<none>"
+            Object.keys(allTools).join(", ") || "<none>"
           }`
         )
       );
@@ -112,7 +118,7 @@ ${refinement ? `Refinement: ${refinement}` : ""}`;
 
           const result = await generateText({
             model: this.model,
-            tools: aiTools,
+            tools: allTools,
             prompt,
             stopWhen: stepCountIs(10),
           });
