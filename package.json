@@ -1,0 +1,37 @@
+{
+  "name": "corpo",
+  "version": "1.0.0",
+  "description": "AI-powered browser automation tool that records and executes workflows using Playwright and Model Context Protocol",
+  "main": "dist/index.js",
+  "type": "module",
+  "bin": {
+    "corpo": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js"
+  },
+  "author": "Máté Molnár",
+  "license": "ISC",
+  "dependencies": {
+    "@ai-sdk/google": "2.0.0",
+    "@modelcontextprotocol/sdk": "^0.6.0",
+    "ai": "5.0.0",
+    "zod": "^3.23.8",
+    "chalk": "^5.3.0",
+    "commander": "^12.0.0",
+    "dotenv": "^17.2.1",
+    "inquirer": "^9.2.15",
+    "ora": "^8.0.1"
+  },
+  "devDependencies": {
+    "@types/inquirer": "^9.0.8",
+    "@types/node": "^20.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.9.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
