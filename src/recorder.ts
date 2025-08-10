@@ -2,11 +2,10 @@ import inquirer from "inquirer";
 import chalk from "chalk";
 import { google } from "@ai-sdk/google";
 import { generateText, stepCountIs } from "ai";
-import { MCPTool } from "./tools/mcp/mcp-client.js";
 import { Workflow, WorkflowStep, saveWorkflow } from "./workflows.js";
 import { PlaywrightMCP } from "./tools/mcp/playwright-mcp.js";
 import { printModelResult, getLogLevel } from "./utils.js";
-import { userInputTool } from "./tools/user-input.js";
+import { userInputOutputSchema, userInputTool } from "./tools/user-input.js";
 
 export class WorkflowRecorder {
   private mcp?: PlaywrightMCP;
@@ -31,7 +30,7 @@ export class WorkflowRecorder {
         ...mcpTools,
         userInput: userInputTool,
       };
-      
+
       console.log(
         chalk.gray(
           `[Recorder] Exposed tools: ${
@@ -62,15 +61,18 @@ export class WorkflowRecorder {
         )
       );
 
+      let previousUserInput: string | undefined;
       // Loop adding steps
       while (true) {
-        const { action } = await inquirer.prompt([
+        const { action } = await inquirer.prompt<{
+          action: "add" | "done" | "cancel";
+        }>([
           {
             type: "list",
             name: "action",
             message: "Next action:",
             choices: [
-              { name: "Add natural-language step", value: "add" },
+              { name: "Add step", value: "add" },
               { name: "Finish and save", value: "done" },
               { name: "Cancel", value: "cancel" },
             ],
@@ -83,10 +85,10 @@ export class WorkflowRecorder {
           return;
         }
 
-        const { nl } = await inquirer.prompt([
+        const { nextAction } = await inquirer.prompt<{ nextAction: string }>([
           {
             type: "input",
-            name: "nl",
+            name: "nextAction",
             message: "Describe the next action:",
             validate: (s: string) => !!s.trim() || "Required",
           },
@@ -95,6 +97,7 @@ export class WorkflowRecorder {
         // Per-step refinement loop: plan -> execute -> validate -> (maybe refine and re-run)
         let accepted = false;
         let refinement: string | undefined = undefined;
+        let userInputForStep: string | undefined;
         while (!accepted) {
           const prompt = `You are recording a browser automation workflow. Use the available tools to perform the user's step end-to-end.
 
@@ -102,10 +105,13 @@ Rules:
 - Keep calling tools as needed until the step is fully completed; do not stop after a single tool call.
 - Prefer: take a page snapshot -> analyze snapshot -> perform the precise action (e.g., click) using a robust selector or description.
 - If the instruction is to click text (e.g., 'Bookings' or 'leading article heading'), first snapshot and analyze to find a stable descriptor, then click using that descriptor.
-- Only when the step is fully done, output a single line starting with 'REPRO:' followed by a concise, imperative description that can reproduce this step later. This instruction should include details that help the runner, like the tools used and a description of the targeted elements.
+- Only when the step is fully done, output a single line starting with 'REPRO:' followed by a concise, imperative description that can reproduce this step later. This instruction should include details that help the runner, like the tools used and a description of how to find the targeted elements.
+- The REPRO line shouldn't mention specific elements unless they are expected to be constant. If the element depends on previous actions, then they should be located dynamically instead of being saved in the instruction.
 
-User step: ${nl}
-${refinement ? `Refinement: ${refinement}` : ""}`;
+User step: ${nextAction}
+${refinement ? `Refinement: ${refinement}` : ""}
+${previousUserInput ? `User input from the previous step: ${previousUserInput}`: ""}
+`;
 
           if (getLogLevel() === "debug") {
             console.log(
@@ -132,6 +138,23 @@ ${refinement ? `Refinement: ${refinement}` : ""}`;
             console.log(resultText);
           }
 
+          const userInputStep = result.steps.find((step) =>
+            step.toolCalls.find((call) => call.toolName === "userInput")
+          );
+
+          if (userInputStep) {
+            const userInputResult = userInputStep.toolResults.find(
+              (result) => result.toolName === "userInput"
+            );
+            const output = await userInputOutputSchema.parseAsync(userInputResult?.output);
+
+            console.log(chalk.gray("[Recorder] User input for next step: "));
+            console.log(output.userInput);
+            userInputForStep = output.userInput;
+          } else {
+            userInputForStep = undefined;
+          }
+          
           const { decision } = await inquirer.prompt([
             {
               type: "list",
@@ -160,7 +183,7 @@ ${refinement ? `Refinement: ${refinement}` : ""}`;
             const reproMatch = resultText.match(/^REPRO:\s*(.+)$/m);
             const reproduction = reproMatch
               ? reproMatch[1].trim()
-              : (resultText || nl).slice(0, 140);
+              : (resultText || nextAction).slice(0, 140);
             if (!reproMatch) {
               console.log(
                 chalk.yellow(
@@ -170,7 +193,7 @@ ${refinement ? `Refinement: ${refinement}` : ""}`;
             }
 
             steps.push({
-              instruction: nl,
+              instruction: nextAction,
               note: note || undefined,
               reproduction,
             });
@@ -189,6 +212,7 @@ ${refinement ? `Refinement: ${refinement}` : ""}`;
             console.log(chalk.yellow("Discarded step."));
             accepted = true;
           }
+          previousUserInput = userInputForStep;
         }
       }
 
@@ -204,10 +228,5 @@ ${refinement ? `Refinement: ${refinement}` : ""}`;
     } finally {
       await this.disconnect();
     }
-  }
-
-  private buildAiTools(_tools: MCPTool[]) {
-    // Kept for backward-compatibility, but runner/recorder now use PlaywrightMCP.getAiTools()
-    return {} as Record<string, any>;
   }
 }

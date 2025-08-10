@@ -2,10 +2,8 @@ import { promises as fs } from "node:fs";
 import { join } from "node:path";
 
 export type WorkflowStep = {
-  // Natural-language instruction for this step (saved for dynamic sites)
   instruction: string;
   note?: string;
-  // A concise, imperative description that can be used to reproduce the step later
   reproduction: string;
 };
 

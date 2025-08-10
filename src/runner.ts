@@ -5,7 +5,7 @@ import { generateText, stepCountIs } from "ai";
 import { loadWorkflow, listWorkflows } from "./workflows.js";
 import { PlaywrightMCP } from "./tools/mcp/playwright-mcp.js";
 import { printModelResult, getLogLevel } from "./utils.js";
-import { userInputTool } from "./tools/user-input.js";
+import { userInputOutputSchema, userInputTool } from "./tools/user-input.js";
 
 export class WorkflowRunner {
   private mcp?: PlaywrightMCP;
@@ -48,19 +48,22 @@ export class WorkflowRunner {
         )
       );
 
+      let previousUserInput: string | undefined;
       for (let i = 0; i < wf.steps.length; i += 1) {
         const step = wf.steps[i];
         console.log(chalk.cyan(`Step ${i + 1}/${wf.steps.length}`));
-        if (step.instruction)
-          console.log(chalk.gray(`Instruction: ${step.instruction}`));
-        if (step.note) console.log(chalk.gray(`Note: ${step.note}`));
+        console.log(chalk.gray(`Instruction: ${step.instruction}`));
         console.log(chalk.gray(`Reproduce: ${step.reproduction}`));
+        if (step.note) {
+          console.log(chalk.gray(`Note: ${step.note}`));
+        }
 
         let refinement: string | undefined = undefined;
         let stepFinished = false;
         let attempts = 0;
         const maxAttempts = autoMode ? 3 : 1; // Auto mode allows retries, interactive mode doesn't
 
+        let userInputForStep: string | undefined;
         while (!stepFinished && attempts < maxAttempts) {
           attempts++;
           if (autoMode) {
@@ -78,7 +81,8 @@ Rules:
 - When finished, output a single line starting with 'DONE'.
 
 Step: ${step.reproduction}
-${refinement ? `Refinement: ${refinement}` : ""}`;
+${refinement ? `Refinement: ${refinement}` : ""}
+${previousUserInput ? `User input from the previous step: ${previousUserInput}` : ""}`;
 
           if (getLogLevel() === "debug") {
             console.log(
@@ -96,13 +100,33 @@ ${refinement ? `Refinement: ${refinement}` : ""}`;
             stopWhen: stepCountIs(10),
           });
 
+          const userInputStep = result.steps.find((step) =>
+            step.toolCalls.find((call) => call.toolName === "userInput")
+          );
+
           printModelResult(result, "Runner");
+
+          if (userInputStep) {
+            const userInputResult = userInputStep.toolResults.find(
+              (result) => result.toolName === "userInput"
+            );
+            const output = await userInputOutputSchema.parseAsync(
+              userInputResult?.output
+            );
+
+            console.log(chalk.gray("[Recorder] User input for next step: "));
+            console.log(output.userInput);
+            userInputForStep = output.userInput;
+          } else {
+            userInputForStep = undefined;
+          }
 
           if (autoMode) {
             // Auto mode logic: assume step is complete if tools were called or "DONE" is output
             const outputText = (result.text ?? "").trim().toLowerCase();
             if (outputText.includes("done") || result.toolCalls.length > 0) {
               stepFinished = true;
+              previousUserInput = userInputForStep;
               console.log(
                 chalk.green(`[Auto Mode] Step ${i + 1} completed successfully`)
               );
@@ -115,6 +139,7 @@ ${refinement ? `Refinement: ${refinement}` : ""}`;
                 )
               );
               stepFinished = true;
+              previousUserInput = userInputForStep;
             } else {
               console.log(
                 chalk.yellow(
@@ -141,6 +166,7 @@ ${refinement ? `Refinement: ${refinement}` : ""}`;
 
             if (decision === "continue") {
               stepFinished = true;
+              previousUserInput = userInputForStep;
             } else if (decision === "refine") {
               const ans: { r?: string } = await inquirer.prompt([
                 {
