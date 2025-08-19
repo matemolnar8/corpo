@@ -1,5 +1,4 @@
-import { promises as fs } from "node:fs";
-import { join } from "node:path";
+import { join } from "@std/path";
 
 export type WorkflowStep = {
   instruction: string;
@@ -14,32 +13,45 @@ export type Workflow = {
   steps: WorkflowStep[];
 };
 
-const WORKFLOW_DIR = join(process.cwd(), "workflows");
+const WORKFLOW_DIR = join(Deno.cwd(), "workflows");
 
 export async function ensureWorkflowDir(): Promise<string> {
-  await fs.mkdir(WORKFLOW_DIR, { recursive: true });
+  await Deno.mkdir(WORKFLOW_DIR, { recursive: true });
   return WORKFLOW_DIR;
 }
 
 export async function saveWorkflow(workflow: Workflow): Promise<string> {
   await ensureWorkflowDir();
+
+  const encoder = new TextEncoder();
+  const data = encoder.encode(JSON.stringify(workflow, null, 2));
+
   const file = join(WORKFLOW_DIR, `${sanitize(workflow.name)}.json`);
-  await fs.writeFile(file, JSON.stringify(workflow, null, 2), "utf8");
+  await Deno.writeFile(file, data);
+
   return file;
 }
 
 export async function loadWorkflow(name: string): Promise<Workflow> {
   const file = join(WORKFLOW_DIR, `${sanitize(name)}.json`);
-  const raw = await fs.readFile(file, "utf8");
-  return JSON.parse(raw) as Workflow;
+  const rawData = await Deno.readFile(file);
+  const jsonData = new TextDecoder().decode(rawData);
+
+  return JSON.parse(jsonData) as Workflow;
 }
 
 export async function listWorkflows(): Promise<string[]> {
   await ensureWorkflowDir();
-  const files = await fs.readdir(WORKFLOW_DIR);
-  return files
-    .filter((f) => f.endsWith(".json"))
-    .map((f) => f.replace(/\.json$/, ""));
+  const filesIterator = Deno.readDir(WORKFLOW_DIR);
+
+  const files: string[] = [];
+  for await (const file of filesIterator) {
+    if (file.isFile && file.name.endsWith(".json")) {
+      files.push(file.name.replace(/\.json$/, ""));
+    }
+  }
+
+  return files;
 }
 
 function sanitize(s: string): string {

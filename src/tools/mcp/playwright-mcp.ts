@@ -1,7 +1,6 @@
 import { tool } from "ai";
 import { z } from "zod";
 import { MCPClient, MCPTool } from "./mcp-client.ts";
-import process from "node:process";
 import { jsonSchema } from "@ai-sdk/provider-utils";
 
 const PLAYWRIGHT_MCP = {
@@ -25,10 +24,10 @@ export class PlaywrightMCP {
   ];
 
   constructor() {
-    process.on("SIGINT", () => {
+    Deno.addSignalListener("SIGINT", () => {
       this.disconnect();
     });
-    process.on("SIGTERM", () => {
+    Deno.addSignalListener("SIGTERM", () => {
       this.disconnect();
     });
   }

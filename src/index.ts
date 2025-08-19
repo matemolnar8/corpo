@@ -3,7 +3,6 @@ import { WorkflowRecorder } from "./recorder.ts";
 import { WorkflowRunner } from "./runner.ts";
 import { setLogLevel } from "./utils.ts";
 import { blue, yellow } from "@std/fmt/colors";
-import process from "node:process";
 
 const program = new Command();
 
@@ -69,7 +68,7 @@ program
     await runner.run(name, true);
   });
 
-process.on("SIGINT", () => {});
-process.on("SIGTERM", () => {});
+Deno.addSignalListener("SIGINT", () => {});
+Deno.addSignalListener("SIGTERM", () => {});
 
 program.parse();

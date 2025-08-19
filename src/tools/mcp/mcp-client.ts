@@ -12,7 +12,6 @@ export type MCPTool = MCPSDKTool;
 export type MCPClientOptions = {
   command: string;
   args?: readonly string[];
-  env?: NodeJS.ProcessEnv;
 };
 
 export class MCPClient {
@@ -25,18 +24,10 @@ export class MCPClient {
   }
 
   async connect(): Promise<void> {
-    const { command, args = [], env } = this.options;
-    let envFiltered: Record<string, string> | undefined = undefined;
-    if (env) {
-      envFiltered = {};
-      for (const [key, value] of Object.entries(env)) {
-        if (typeof value === "string") envFiltered[key] = value;
-      }
-    }
+    const { command, args = [] } = this.options;
     const transport = new StdioClientTransport({
       command,
       args: [...args],
-      env: envFiltered,
     });
     const client = new Client(
       { name: "Corpo CLI", version: "0.0.1" },
