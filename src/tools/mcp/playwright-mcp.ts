@@ -20,6 +20,8 @@ export class PlaywrightMCP {
     "browser_type",
     "browser_wait_for",
     "browser_select_option",
+    "browser_tab_list",
+    "browser_tab_select",
   ];
 
   constructor() {
