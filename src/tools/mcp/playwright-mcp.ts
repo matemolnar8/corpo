@@ -1,7 +1,8 @@
 import { tool } from "ai";
-import { jsonSchema } from "@ai-sdk/provider-utils";
 import { z } from "zod";
-import { MCPClient, MCPTool } from "./mcp-client.js";
+import { MCPClient, MCPTool } from "./mcp-client.ts";
+import process from "node:process";
+import { jsonSchema } from "@ai-sdk/provider-utils";
 
 const PLAYWRIGHT_MCP = {
   command: "npx",
@@ -64,24 +65,22 @@ export class PlaywrightMCP {
     return this.filterAllowedTools(all);
   }
 
-  async callTool(name: string, args: Record<string, unknown>) {
+  callTool(name: string, args: Record<string, unknown>) {
     const client = this.getClient();
     return client.callTool(name, args);
   }
 
   buildAiTools(tools: MCPTool[]) {
-    const map: Record<string, any> = {};
+    const map: Record<string, unknown> = {};
     for (const t of tools) {
       map[t.name] = tool({
         description: t.description ?? `MCP tool ${t.name}`,
-        inputSchema: t.inputSchema
-          ? jsonSchema(t.inputSchema as any)
-          : z.object({}),
-        execute: async (options: any) => {
-          const input = options?.input ?? options ?? {};
-          return this.callTool(t.name, input);
+        inputSchema: (t.inputSchema && jsonSchema(t.inputSchema)) ??
+          z.toJSONSchema(z.object({})),
+        execute: (options: unknown) => {
+          return this.callTool(t.name, options as Record<string, unknown>);
         },
-      } as any);
+      });
     }
     return map;
   }

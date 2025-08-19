@@ -1,12 +1,11 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import type {
-  Tool as MCPSDKTool,
-  ListToolsResult,
   CallToolResult,
   CompatibilityCallToolResult,
+  ListToolsResult,
+  Tool as MCPSDKTool,
 } from "@modelcontextprotocol/sdk/types";
-import pkg from "../../../package.json" with { type: "json" };
 
 export type MCPTool = MCPSDKTool;
 
@@ -34,23 +33,30 @@ export class MCPClient {
         if (typeof value === "string") envFiltered[key] = value;
       }
     }
-    const transport = new StdioClientTransport({ command, args: [...args], env: envFiltered });
-    const client = new Client({ name: "Corpo CLI", version: pkg.version }, {
-      capabilities: { tools: {} },
+    const transport = new StdioClientTransport({
+      command,
+      args: [...args],
+      env: envFiltered,
     });
+    const client = new Client(
+      { name: "Corpo CLI", version: "0.0.1" },
+      {
+        capabilities: { tools: {} },
+      },
+    );
     await client.connect(transport);
     this.transport = transport;
     this.client = client;
   }
 
-  async listTools(): Promise<ListToolsResult> {
+  listTools(): Promise<ListToolsResult> {
     if (!this.client) throw new Error("MCP not connected");
     return this.client.listTools();
   }
 
-  async callTool(
+  callTool(
     name: string,
-    args: Record<string, unknown>
+    args: Record<string, unknown>,
   ): Promise<CallToolResult | CompatibilityCallToolResult> {
     if (!this.client) throw new Error("MCP not connected");
     return this.client.callTool({ name, arguments: args });
@@ -58,7 +64,11 @@ export class MCPClient {
 
   async disconnect(): Promise<void> {
     if (this.client) {
-      try { await this.client.close(); } catch {}
+      try {
+        await this.client.close();
+      } catch {
+        // Ignore errors
+      }
     }
     this.client = undefined;
     this.transport = undefined;

@@ -1,15 +1,16 @@
 import inquirer from "inquirer";
-import chalk from "chalk";
 import { google } from "@ai-sdk/google";
 import { generateText, stepCountIs } from "ai";
-import { Workflow, WorkflowStep, saveWorkflow } from "./workflows.js";
-import { PlaywrightMCP } from "./tools/mcp/playwright-mcp.js";
-import { printModelResult, getLogLevel } from "./utils.js";
-import { userInputOutputSchema, userInputTool } from "./tools/user-input.js";
+import { saveWorkflow, Workflow, WorkflowStep } from "./workflows.ts";
+import { PlaywrightMCP } from "./tools/mcp/playwright-mcp.ts";
+import { getLogLevel, printModelResult } from "./utils.ts";
+import { userInputTool } from "./tools/user-input.ts";
+import { resetVariables, retrieveVariableTool, storeVariableTool } from "./tools/variable.ts";
+import { blue, gray, green, magenta, yellow } from "@std/fmt/colors";
 
 export class WorkflowRecorder {
   private mcp?: PlaywrightMCP;
-  private model = google("gemini-2.5-flash");
+  private model = google("gemini-2.0-flash-lite");
 
   async connect(): Promise<void> {
     const mcp = new PlaywrightMCP();
@@ -23,20 +24,21 @@ export class WorkflowRecorder {
 
   async interactiveRecord(): Promise<void> {
     await this.connect();
+    resetVariables();
     try {
       if (!this.mcp) throw new Error("Not connected");
       const mcpTools = await this.mcp.getAiTools();
       const allTools = {
         ...mcpTools,
         userInput: userInputTool,
+        storeVariable: storeVariableTool,
+        retrieveVariable: retrieveVariableTool,
       };
 
       console.log(
-        chalk.gray(
-          `[Recorder] Exposed tools: ${
-            Object.keys(allTools).join(", ") || "<none>"
-          }`
-        )
+        gray(
+          `[Recorder] Exposed tools: ${Object.keys(allTools).join(", ") || "<none>"}`,
+        ),
       );
       const steps: WorkflowStep[] = [];
 
@@ -56,12 +58,11 @@ export class WorkflowRecorder {
 
       // Guidance
       console.log(
-        chalk.blue(
-          "Recording started. Describe each step in natural language (e.g., 'open https://intranet and sign in', 'click the Bookings tab', 'copy the booking dates'). The agent will pick a tool and arguments. Type 'done' to finish."
-        )
+        blue(
+          "Recording started. Describe each step in natural language (e.g., 'open https://intranet and sign in', 'click the Bookings tab', 'copy the booking dates'). The agent will pick a tool and arguments. Type 'done' to finish.",
+        ),
       );
 
-      let previousUserInput: string | undefined;
       // Loop adding steps
       while (true) {
         const { action } = await inquirer.prompt<{
@@ -81,7 +82,7 @@ export class WorkflowRecorder {
 
         if (action === "done") break;
         if (action === "cancel") {
-          console.log(chalk.yellow("Cancelled; no workflow saved."));
+          console.log(yellow("Cancelled; no workflow saved."));
           return;
         }
 
@@ -97,9 +98,9 @@ export class WorkflowRecorder {
         // Per-step refinement loop: plan -> execute -> validate -> (maybe refine and re-run)
         let accepted = false;
         let refinement: string | undefined = undefined;
-        let userInputForStep: string | undefined;
         while (!accepted) {
-          const prompt = `You are recording a browser automation workflow. Use the available tools to perform the user's step end-to-end.
+          const prompt =
+            `You are recording a browser automation workflow. Use the available tools to perform the user's step end-to-end.
 
 Rules:
 - Keep calling tools as needed until the step is fully completed; do not stop after a single tool call.
@@ -110,16 +111,15 @@ Rules:
 
 User step: ${nextAction}
 ${refinement ? `Refinement: ${refinement}` : ""}
-${previousUserInput ? `User input from the previous step: ${previousUserInput}`: ""}
 `;
 
           if (getLogLevel() === "debug") {
             console.log(
-              chalk.magenta(
-                "[Recorder] About to run model for this step with the following prompt:"
-              )
+              magenta(
+                "[Recorder] About to run model for this step with the following prompt:",
+              ),
             );
-            console.log(chalk.gray(prompt));
+            console.log(gray(prompt));
           }
 
           const result = await generateText({
@@ -134,27 +134,10 @@ ${previousUserInput ? `User input from the previous step: ${previousUserInput}`:
 
           const resultText = result.text?.trim() ?? "";
           if (resultText) {
-            console.log(chalk.gray("[Recorder] Model final text:"));
+            console.log(gray("[Recorder] Model final text:"));
             console.log(resultText);
           }
 
-          const userInputStep = result.steps.find((step) =>
-            step.toolCalls.find((call) => call.toolName === "userInput")
-          );
-
-          if (userInputStep) {
-            const userInputResult = userInputStep.toolResults.find(
-              (result) => result.toolName === "userInput"
-            );
-            const output = await userInputOutputSchema.parseAsync(userInputResult?.output);
-
-            console.log(chalk.gray("[Recorder] User input for next step: "));
-            console.log(output.userInput);
-            userInputForStep = output.userInput;
-          } else {
-            userInputForStep = undefined;
-          }
-          
           const { decision } = await inquirer.prompt([
             {
               type: "list",
@@ -181,14 +164,12 @@ ${previousUserInput ? `User input from the previous step: ${previousUserInput}`:
             ]);
 
             const reproMatch = resultText.match(/^REPRO:\s*(.+)$/m);
-            const reproduction = reproMatch
-              ? reproMatch[1].trim()
-              : (resultText || nextAction).slice(0, 140);
+            const reproduction = reproMatch ? reproMatch[1].trim() : (resultText || nextAction).slice(0, 140);
             if (!reproMatch) {
               console.log(
-                chalk.yellow(
-                  "[Recorder] No explicit REPRO: line found; falling back to truncated text/instruction."
-                )
+                yellow(
+                  "[Recorder] No explicit REPRO: line found; falling back to truncated text/instruction.",
+                ),
               );
             }
 
@@ -209,10 +190,9 @@ ${previousUserInput ? `User input from the previous step: ${previousUserInput}`:
             ]);
             refinement = editAns.refinement || undefined;
           } else {
-            console.log(chalk.yellow("Discarded step."));
+            console.log(yellow("Discarded step."));
             accepted = true;
           }
-          previousUserInput = userInputForStep;
         }
       }
 
@@ -224,7 +204,7 @@ ${previousUserInput ? `User input from the previous step: ${previousUserInput}`:
       };
 
       const file = await saveWorkflow(workflow);
-      console.log(chalk.green(`Saved workflow to ${file}`));
+      console.log(green(`Saved workflow to ${file}`));
     } finally {
       await this.disconnect();
     }

@@ -1,6 +1,7 @@
 # Corpo - AI-Powered Browser Automation
 
-A CLI tool that uses AI to help you record and automate browser workflows using Playwright and the Model Context Protocol (MCP).
+A CLI tool that uses AI to help you record and automate browser workflows using Playwright and the Model Context
+Protocol (MCP).
 
 ## Features
 
@@ -19,27 +20,32 @@ A CLI tool that uses AI to help you record and automate browser workflows using 
 ## Installation
 
 1. Clone the repository:
+
 ```bash
 git clone <repository-url>
 cd corpo
 ```
 
 2. Install dependencies:
+
 ```bash
 npm install
 ```
 
 3. Set up your Google AI API key:
+
 ```bash
 export GOOGLE_GENERATIVE_AI_API_KEY="your-api-key-here"
 ```
 
 4. Build the project:
+
 ```bash
 npm run build
 ```
 
 5. Link the CLI globally (optional):
+
 ```bash
 npm link
 ```
@@ -56,6 +62,7 @@ npm run dev record
 ```
 
 The recorder will:
+
 1. Ask for a workflow name and description
 2. Guide you through describing each step in natural language
 3. Use AI to interpret your descriptions and execute browser actions
@@ -75,6 +82,7 @@ npm run dev run
 ```
 
 The runner will:
+
 1. Load the saved workflow
 2. Execute each step using AI-powered browser automation
 3. Allow you to validate each step and provide refinements if needed
@@ -101,7 +109,7 @@ corpo help
 ### Project Structure
 
 ```
-ts_rawdog/
+corpo/
 ├── src/
 │   ├── index.ts           # Main CLI entry point
 │   ├── recorder.ts        # Workflow recording logic
@@ -210,4 +218,4 @@ Workflow completed.
 
 ## License
 
-ISC License - see package.json for details. 
+ISC License - see package.json for details.

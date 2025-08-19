@@ -1,15 +1,16 @@
 import inquirer from "inquirer";
-import chalk from "chalk";
 import { google } from "@ai-sdk/google";
 import { generateText, stepCountIs } from "ai";
-import { loadWorkflow, listWorkflows } from "./workflows.js";
-import { PlaywrightMCP } from "./tools/mcp/playwright-mcp.js";
-import { printModelResult, getLogLevel } from "./utils.js";
-import { userInputOutputSchema, userInputTool } from "./tools/user-input.js";
+import { listWorkflows, loadWorkflow } from "./workflows.ts";
+import { PlaywrightMCP } from "./tools/mcp/playwright-mcp.ts";
+import { getLogLevel, printModelResult } from "./utils.ts";
+import { userInputTool } from "./tools/user-input.ts";
+import { resetVariables, retrieveVariableTool, storeVariableTool } from "./tools/variable.ts";
+import { blue, cyan, gray, green, magenta, red, yellow } from "@std/fmt/colors";
 
 export class WorkflowRunner {
   private mcp?: PlaywrightMCP;
-  private model = google("gemini-2.5-flash");
+  private model = google("gemini-2.0-flash-lite");
 
   async connect(): Promise<void> {
     const mcp = new PlaywrightMCP();
@@ -23,6 +24,7 @@ export class WorkflowRunner {
 
   async run(workflowName?: string, autoMode: boolean = false): Promise<void> {
     await this.connect();
+    resetVariables();
     try {
       const name = await this.selectWorkflow(workflowName);
       const wf = await loadWorkflow(name);
@@ -32,30 +34,30 @@ export class WorkflowRunner {
       const allTools = {
         ...mcpTools,
         userInput: userInputTool,
+        storeVariable: storeVariableTool,
+        retrieveVariable: retrieveVariableTool,
       };
       console.log(
-        chalk.gray(
-          `[Runner] Exposed tools: ${
-            Object.keys(allTools).join(", ") || "<none>"
-          }`
-        )
+        gray(
+          `[Runner] Exposed tools: ${Object.keys(allTools).join(", ") || "<none>"}`,
+        ),
       );
 
       const modeText = autoMode ? "AUTO" : "interactive";
       console.log(
-        chalk.blue(
-          `Running workflow '${wf.name}' in ${modeText} mode with ${wf.steps.length} steps`
-        )
+        blue(
+          `Running workflow '${wf.name}' in ${modeText} mode with ${wf.steps.length} steps`,
+        ),
       );
 
       let previousUserInput: string | undefined;
       for (let i = 0; i < wf.steps.length; i += 1) {
         const step = wf.steps[i];
-        console.log(chalk.cyan(`Step ${i + 1}/${wf.steps.length}`));
-        console.log(chalk.gray(`Instruction: ${step.instruction}`));
-        console.log(chalk.gray(`Reproduce: ${step.reproduction}`));
+        console.log(cyan(`Step ${i + 1}/${wf.steps.length}`));
+        console.log(gray(`Instruction: ${step.instruction}`));
+        console.log(gray(`Reproduce: ${step.reproduction}`));
         if (step.note) {
-          console.log(chalk.gray(`Note: ${step.note}`));
+          console.log(gray(`Note: ${step.note}`));
         }
 
         let refinement: string | undefined = undefined;
@@ -63,12 +65,11 @@ export class WorkflowRunner {
         let attempts = 0;
         const maxAttempts = autoMode ? 3 : 1; // Auto mode allows retries, interactive mode doesn't
 
-        let userInputForStep: string | undefined;
         while (!stepFinished && attempts < maxAttempts) {
           attempts++;
           if (autoMode) {
             console.log(
-              chalk.yellow(`[Auto Mode] Attempt ${attempts}/${maxAttempts}`)
+              yellow(`[Auto Mode] Attempt ${attempts}/${maxAttempts}`),
             );
           }
 
@@ -86,11 +87,11 @@ ${previousUserInput ? `User input from the previous step: ${previousUserInput}` 
 
           if (getLogLevel() === "debug") {
             console.log(
-              chalk.magenta(
-                "[Runner] About to run model for this step with the following prompt:"
-              )
+              magenta(
+                "[Runner] About to run model for this step with the following prompt:",
+              ),
             );
-            console.log(chalk.gray(prompt));
+            console.log(gray(prompt));
           }
 
           const result = await generateText({
@@ -100,51 +101,26 @@ ${previousUserInput ? `User input from the previous step: ${previousUserInput}` 
             stopWhen: stepCountIs(10),
           });
 
-          const userInputStep = result.steps.find((step) =>
-            step.toolCalls.find((call) => call.toolName === "userInput")
-          );
-
           printModelResult(result, "Runner");
-
-          if (userInputStep) {
-            const userInputResult = userInputStep.toolResults.find(
-              (result) => result.toolName === "userInput"
-            );
-            const output = await userInputOutputSchema.parseAsync(
-              userInputResult?.output
-            );
-
-            console.log(chalk.gray("[Recorder] User input for next step: "));
-            console.log(output.userInput);
-            userInputForStep = output.userInput;
-          } else {
-            userInputForStep = undefined;
-          }
 
           if (autoMode) {
             // Auto mode logic: assume step is complete if tools were called or "DONE" is output
             const outputText = (result.text ?? "").trim().toLowerCase();
             if (outputText.includes("done") || result.toolCalls.length > 0) {
               stepFinished = true;
-              previousUserInput = userInputForStep;
               console.log(
-                chalk.green(`[Auto Mode] Step ${i + 1} completed successfully`)
+                green(`[Auto Mode] Step ${i + 1} completed successfully`),
               );
             } else if (attempts >= maxAttempts) {
               console.log(
-                chalk.red(
-                  `[Auto Mode] Step ${
-                    i + 1
-                  } failed after ${maxAttempts} attempts, continuing to next step`
-                )
+                red(
+                  `[Auto Mode] Step ${i + 1} failed after ${maxAttempts} attempts, continuing to next step`,
+                ),
               );
               stepFinished = true;
-              previousUserInput = userInputForStep;
             } else {
               console.log(
-                chalk.yellow(
-                  `[Auto Mode] Step ${i + 1} incomplete, retrying...`
-                )
+                yellow(`[Auto Mode] Step ${i + 1} incomplete, retrying...`),
               );
               // Add a small delay between attempts
               await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -166,7 +142,6 @@ ${previousUserInput ? `User input from the previous step: ${previousUserInput}` 
 
             if (decision === "continue") {
               stepFinished = true;
-              previousUserInput = userInputForStep;
             } else if (decision === "refine") {
               const ans: { r?: string } = await inquirer.prompt([
                 {
@@ -185,7 +160,7 @@ ${previousUserInput ? `User input from the previous step: ${previousUserInput}` 
       }
 
       const completionText = autoMode ? "completed in AUTO mode" : "completed";
-      console.log(chalk.green(`Workflow ${completionText}.`));
+      console.log(green(`Workflow ${completionText}.`));
     } finally {
       await this.disconnect();
     }
@@ -194,8 +169,9 @@ ${previousUserInput ? `User input from the previous step: ${previousUserInput}` 
   private async selectWorkflow(pref?: string): Promise<string> {
     if (pref) return pref;
     const names = await listWorkflows();
-    if (names.length === 0)
+    if (names.length === 0) {
       throw new Error("No saved workflows found. Record one first.");
+    }
     const { name } = await inquirer.prompt([
       {
         type: "list",

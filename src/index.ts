@@ -1,18 +1,16 @@
-#!/usr/bin/env node
-import "dotenv/config";
-
 import { Command } from "commander";
-import chalk from "chalk";
-import { WorkflowRecorder } from "./recorder.js";
-import { WorkflowRunner } from "./runner.js";
-import { setLogLevel } from "./utils.js";
+import { WorkflowRecorder } from "./recorder.ts";
+import { WorkflowRunner } from "./runner.ts";
+import { setLogLevel } from "./utils.ts";
+import { blue, yellow } from "@std/fmt/colors";
+import process from "node:process";
 
 const program = new Command();
 
 program
   .name("corpo")
   .description(
-    "Corpo is a browser automation tool that uses AI to help you record and automate menial tasks."
+    "Corpo is a browser automation tool that uses AI to help you record and automate menial tasks.",
   )
   .version("0.0.1")
   .option("-d, --debug", "Enable debug logging");
@@ -21,15 +19,15 @@ program
   .command("help")
   .description("Show detailed help information")
   .action(() => {
-    console.log(chalk.blue.bold("Corpo CLI - AI-Powered Command Line Tool\n"));
-    console.log(chalk.yellow("Available Commands:"));
+    console.log(blue("Corpo CLI - AI-Powered Command Line Tool\n"));
+    console.log(yellow("Available Commands:"));
     console.log("  help         - Show this help message");
     console.log(
-      "  record       - Record a workflow using Playwright MCP (@playwright/mcp)"
+      "  record       - Record a workflow using Playwright MCP (@playwright/mcp)",
     );
     console.log("  run [name]   - Run a saved workflow interactively");
     console.log(
-      "  run-auto [name] - Run a saved workflow automatically without prompts\n"
+      "  run-auto [name] - Run a saved workflow automatically without prompts\n",
     );
   });
 
