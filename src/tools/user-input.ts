@@ -1,5 +1,5 @@
 import { tool } from "ai";
-import inquirer from "inquirer";
+import { input } from "@inquirer/prompts";
 import z from "zod";
 
 export const userInputInputSchema = z.object({
@@ -15,16 +15,7 @@ export const userInputTool = tool({
   inputSchema: userInputInputSchema,
   outputSchema: userInputOutputSchema,
   execute: async ({ question }) => {
-    const { userInput } = await inquirer.prompt<{ userInput: string }>([
-      {
-        message: question,
-        type: "input",
-        name: "userInput",
-      },
-    ]);
-
-    return {
-      userInput,
-    };
+    const answer = await input({ message: question });
+    return { userInput: answer ?? "" };
   },
 });

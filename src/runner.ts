@@ -1,4 +1,3 @@
-import inquirer from "inquirer";
 import { google } from "@ai-sdk/google";
 import { generateText, stepCountIs } from "ai";
 import { listWorkflows, loadWorkflow } from "./workflows.ts";
@@ -6,7 +5,8 @@ import { PlaywrightMCP } from "./tools/mcp/playwright-mcp.ts";
 import { getLogLevel, printModelResult } from "./utils.ts";
 import { userInputTool } from "./tools/user-input.ts";
 import { resetVariables, retrieveVariableTool, storeVariableTool } from "./tools/variable.ts";
-import { blue, cyan, gray, green, magenta, red, yellow } from "@std/fmt/colors";
+import { cyan, gray, green, red, yellow } from "@std/fmt/colors";
+import { input, select } from "@inquirer/prompts";
 
 export class WorkflowRunner {
   private mcp?: PlaywrightMCP;
@@ -45,7 +45,7 @@ export class WorkflowRunner {
 
       const modeText = autoMode ? "AUTO" : "interactive";
       console.log(
-        blue(
+        cyan(
           `Running workflow '${wf.name}' in ${modeText} mode with ${wf.steps.length} steps`,
         ),
       );
@@ -86,11 +86,7 @@ ${refinement ? `Refinement: ${refinement}` : ""}
 ${previousUserInput ? `User input from the previous step: ${previousUserInput}` : ""}`;
 
           if (getLogLevel() === "debug") {
-            console.log(
-              magenta(
-                "[Runner] About to run model for this step with the following prompt:",
-              ),
-            );
+            console.log(gray("[Runner] About to run model for this step with the following prompt:"));
             console.log(gray(prompt));
           }
 
@@ -127,31 +123,23 @@ ${previousUserInput ? `User input from the previous step: ${previousUserInput}` 
             }
           } else {
             // Interactive mode logic: ask user for decision
-            const { decision } = await inquirer.prompt([
-              {
-                type: "list",
-                name: "decision",
-                message: "Is this step finished?",
-                choices: [
-                  { name: "Continue to next step", value: "continue" },
-                  { name: "Re-run with change instructions", value: "refine" },
-                  { name: "Abort workflow", value: "abort" },
-                ],
-              },
-            ]);
+            const decision = await select({
+              message: "Is this step finished?",
+              choices: [
+                { name: "Continue to next step", value: "continue" },
+                { name: "Re-run with change instructions", value: "refine" },
+                { name: "Abort workflow", value: "abort" },
+              ] as const,
+            });
 
             if (decision === "continue") {
               stepFinished = true;
             } else if (decision === "refine") {
-              const ans: { r?: string } = await inquirer.prompt([
-                {
-                  type: "input",
-                  name: "r",
-                  message: "Describe changes to apply and re-run:",
-                  default: refinement ?? "",
-                },
-              ]);
-              refinement = ans.r || undefined;
+              const r = await input({
+                message: "Describe changes to apply and re-run:",
+                default: refinement ?? "",
+              });
+              refinement = r || undefined;
             } else {
               throw new Error("Workflow aborted by user");
             }
@@ -172,14 +160,10 @@ ${previousUserInput ? `User input from the previous step: ${previousUserInput}` 
     if (names.length === 0) {
       throw new Error("No saved workflows found. Record one first.");
     }
-    const { name } = await inquirer.prompt([
-      {
-        type: "list",
-        name: "name",
-        message: "Select workflow:",
-        choices: names,
-      },
-    ]);
+    const name = await select({
+      message: "Select workflow:",
+      choices: names.map((n) => ({ name: n, value: n })),
+    });
     return name as string;
   }
 }

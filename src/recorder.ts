@@ -1,4 +1,3 @@
-import inquirer from "inquirer";
 import { google } from "@ai-sdk/google";
 import { generateText, stepCountIs } from "ai";
 import { saveWorkflow, Workflow, WorkflowStep } from "./workflows.ts";
@@ -6,7 +5,8 @@ import { PlaywrightMCP } from "./tools/mcp/playwright-mcp.ts";
 import { getLogLevel, printModelResult } from "./utils.ts";
 import { userInputTool } from "./tools/user-input.ts";
 import { resetVariables, retrieveVariableTool, storeVariableTool } from "./tools/variable.ts";
-import { blue, gray, green, magenta, yellow } from "@std/fmt/colors";
+import { cyan, gray, green, yellow } from "@std/fmt/colors";
+import { input, select } from "@inquirer/prompts";
 
 export class WorkflowRecorder {
   private mcp?: PlaywrightMCP;
@@ -42,43 +42,33 @@ export class WorkflowRecorder {
       );
       const steps: WorkflowStep[] = [];
 
-      const { workflowName, workflowDescription } = await inquirer.prompt([
-        {
-          type: "input",
-          name: "workflowName",
-          message: "Workflow name:",
-          validate: (s: string) => !!s.trim() || "Required",
-        },
-        {
-          type: "input",
-          name: "workflowDescription",
-          message: "Description (optional):",
-        },
-      ]);
+      const workflowName = await input({
+        message: "Workflow name:",
+        required: true,
+      });
+      const workflowDescription = await input({
+        message: "Description (optional):",
+      });
 
       // Guidance
       console.log(
-        blue(
+        cyan(
           "Recording started. Describe each step in natural language (e.g., 'open https://intranet and sign in', 'click the Bookings tab', 'copy the booking dates'). The agent will pick a tool and arguments. Type 'done' to finish.",
         ),
       );
 
       // Loop adding steps
       while (true) {
-        const { action } = await inquirer.prompt<{
-          action: "add" | "done" | "cancel";
-        }>([
+        const action = await select(
           {
-            type: "list",
-            name: "action",
             message: "Next action:",
             choices: [
               { name: "Add step", value: "add" },
               { name: "Finish and save", value: "done" },
               { name: "Cancel", value: "cancel" },
-            ],
+            ] as const,
           },
-        ]);
+        );
 
         if (action === "done") break;
         if (action === "cancel") {
@@ -86,14 +76,10 @@ export class WorkflowRecorder {
           return;
         }
 
-        const { nextAction } = await inquirer.prompt<{ nextAction: string }>([
-          {
-            type: "input",
-            name: "nextAction",
-            message: "Describe the next action:",
-            validate: (s: string) => !!s.trim() || "Required",
-          },
-        ]);
+        const nextAction = await input({
+          message: "Describe the next action:",
+          required: true,
+        });
 
         // Per-step refinement loop: plan -> execute -> validate -> (maybe refine and re-run)
         let accepted = false;
@@ -114,11 +100,7 @@ ${refinement ? `Refinement: ${refinement}` : ""}
 `;
 
           if (getLogLevel() === "debug") {
-            console.log(
-              magenta(
-                "[Recorder] About to run model for this step with the following prompt:",
-              ),
-            );
+            console.log(gray("[Recorder] About to run model for this step with the following prompt:"));
             console.log(gray(prompt));
           }
 
@@ -138,30 +120,19 @@ ${refinement ? `Refinement: ${refinement}` : ""}
             console.log(resultText);
           }
 
-          const { decision } = await inquirer.prompt([
-            {
-              type: "list",
-              name: "decision",
-              message: "Validate this step:",
-              choices: [
-                { name: "Looks good, save step", value: "accept" },
-                {
-                  name: "Provide change instructions and re-run",
-                  value: "refine",
-                },
-                { name: "Discard this step", value: "discard" },
-              ],
-            },
-          ]);
+          const decision = await select({
+            message: "Validate this step:",
+            choices: [
+              { name: "Looks good, save step", value: "accept" },
+              { name: "Provide change instructions and re-run", value: "refine" },
+              { name: "Discard this step", value: "discard" },
+            ] as const,
+          });
 
           if (decision === "accept") {
-            const { note } = await inquirer.prompt([
-              {
-                type: "input",
-                name: "note",
-                message: "Optional note for this step:",
-              },
-            ]);
+            const note = await input({
+              message: "Optional note for this step:",
+            });
 
             const reproMatch = resultText.match(/^REPRO:\s*(.+)$/m);
             const reproduction = reproMatch ? reproMatch[1].trim() : (resultText || nextAction).slice(0, 140);
@@ -180,15 +151,11 @@ ${refinement ? `Refinement: ${refinement}` : ""}
             });
             accepted = true;
           } else if (decision === "refine") {
-            const editAns: { refinement?: string } = await inquirer.prompt([
-              {
-                type: "input",
-                name: "refinement",
-                message: "Describe what to change (the agent will re-run):",
-                default: refinement ?? "",
-              },
-            ]);
-            refinement = editAns.refinement || undefined;
+            const editRefinement = await input({
+              message: "Describe what to change (the agent will re-run):",
+              default: refinement ?? "",
+            });
+            refinement = editRefinement || undefined;
           } else {
             console.log(yellow("Discarded step."));
             accepted = true;

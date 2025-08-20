@@ -2,7 +2,6 @@ import { Command } from "commander";
 import { WorkflowRecorder } from "./recorder.ts";
 import { WorkflowRunner } from "./runner.ts";
 import { setLogLevel } from "./utils.ts";
-import { blue, yellow } from "@std/fmt/colors";
 
 const program = new Command();
 
@@ -13,22 +12,6 @@ program
   )
   .version("0.0.1")
   .option("-d, --debug", "Enable debug logging");
-
-program
-  .command("help")
-  .description("Show detailed help information")
-  .action(() => {
-    console.log(blue("Corpo CLI - AI-Powered Command Line Tool\n"));
-    console.log(yellow("Available Commands:"));
-    console.log("  help         - Show this help message");
-    console.log(
-      "  record       - Record a workflow using Playwright MCP (@playwright/mcp)",
-    );
-    console.log("  run [name]   - Run a saved workflow interactively");
-    console.log(
-      "  run-auto [name] - Run a saved workflow automatically without prompts\n",
-    );
-  });
 
 program
   .command("record")
@@ -67,8 +50,5 @@ program
     const runner = new WorkflowRunner();
     await runner.run(name, true);
   });
-
-Deno.addSignalListener("SIGINT", () => {});
-Deno.addSignalListener("SIGTERM", () => {});
 
 program.parse();
