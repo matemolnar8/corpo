@@ -2,8 +2,29 @@ import { Command } from "commander";
 import { WorkflowRecorder } from "./recorder.ts";
 import { WorkflowRunner } from "./runner.ts";
 import { setLogLevel } from "./utils.ts";
+import { PlaywrightMCP } from "./tools/mcp/playwright-mcp.ts";
 
 const program = new Command();
+
+async function setup() {
+  const options = program.opts();
+  if (options.debug) {
+    setLogLevel("debug");
+  }
+  const mcp = new PlaywrightMCP();
+  await mcp.connect();
+
+  async function exit(code = 0) {
+    await mcp.disconnect();
+    Deno.exit(code);
+  }
+
+  Deno.addSignalListener("SIGINT", () => {
+    void exit(1);
+  });
+
+  return { mcp, exit };
+}
 
 program
   .name("corpo")
@@ -17,12 +38,10 @@ program
   .command("record")
   .description("Record a workflow using Playwright MCP server")
   .action(async () => {
-    const options = program.opts();
-    if (options.debug) {
-      setLogLevel("debug");
-    }
-    const recorder = new WorkflowRecorder();
+    const { mcp, exit } = await setup();
+    const recorder = new WorkflowRecorder(mcp);
     await recorder.interactiveRecord();
+    await exit();
   });
 
 program
@@ -30,12 +49,10 @@ program
   .description("Run a saved workflow via Playwright MCP server")
   .argument("[name]", "Workflow name to run")
   .action(async (name: string | undefined) => {
-    const options = program.opts();
-    if (options.debug) {
-      setLogLevel("debug");
-    }
-    const runner = new WorkflowRunner();
+    const { mcp, exit } = await setup();
+    const runner = new WorkflowRunner(mcp);
     await runner.run(name, false);
+    await exit();
   });
 
 program
@@ -43,12 +60,10 @@ program
   .description("Run a saved workflow automatically without user prompts")
   .argument("[name]", "Workflow name to run")
   .action(async (name: string | undefined) => {
-    const options = program.opts();
-    if (options.debug) {
-      setLogLevel("debug");
-    }
-    const runner = new WorkflowRunner();
+    const { mcp, exit } = await setup();
+    const runner = new WorkflowRunner(mcp);
     await runner.run(name, true);
+    await exit();
   });
 
 program.parse();

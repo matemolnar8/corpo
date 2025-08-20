@@ -1,6 +1,6 @@
 {
   "tasks": {
-    "dev": "deno run --env-file --allow-net --allow-env --allow-run=npx --allow-write=./workflows --allow-read=./workflows src/index.ts"
+    "corpo": "deno run --env-file --allow-net --allow-env --allow-run=npx --allow-write=./workflows --allow-read=./workflows src/index.ts"
   },
   "imports": {
     "@ai-sdk/google": "npm:@ai-sdk/google@^2.0.7",

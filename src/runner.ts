@@ -9,70 +9,56 @@ import { input, select } from "@inquirer/prompts";
 import { model } from "./model.ts";
 
 export class WorkflowRunner {
-  private mcp?: PlaywrightMCP;
-
-  async connect(): Promise<void> {
-    const mcp = new PlaywrightMCP();
-    await mcp.connect();
-    this.mcp = mcp;
-  }
-
-  async disconnect(): Promise<void> {
-    if (this.mcp) await this.mcp.disconnect();
-  }
+  constructor(private mcp: PlaywrightMCP) {}
 
   async run(workflowName?: string, autoMode: boolean = false): Promise<void> {
-    await this.connect();
     resetVariables();
-    try {
-      const name = await this.selectWorkflow(workflowName);
-      const wf = await loadWorkflow(name);
+    const name = await this.selectWorkflow(workflowName);
+    const wf = await loadWorkflow(name);
 
-      if (!this.mcp) throw new Error("Not connected");
-      const mcpTools = await this.mcp.getAiTools();
-      const allTools = {
-        ...mcpTools,
-        userInput: userInputTool,
-        storeVariable: storeVariableTool,
-        retrieveVariable: retrieveVariableTool,
-      };
-      console.log(
-        gray(
-          `[Runner] Exposed tools: ${Object.keys(allTools).join(", ") || "<none>"}`,
-        ),
-      );
+    const mcpTools = await this.mcp.getAiTools();
+    const allTools = {
+      ...mcpTools,
+      userInput: userInputTool,
+      storeVariable: storeVariableTool,
+      retrieveVariable: retrieveVariableTool,
+    };
+    console.log(
+      gray(
+        `[Runner] Exposed tools: ${Object.keys(allTools).join(", ") || "<none>"}`,
+      ),
+    );
 
-      const modeText = autoMode ? "AUTO" : "interactive";
-      console.log(
-        cyan(
-          `Running workflow '${wf.name}' in ${modeText} mode with ${wf.steps.length} steps`,
-        ),
-      );
+    const modeText = autoMode ? "AUTO" : "interactive";
+    console.log(
+      cyan(
+        `Running workflow '${wf.name}' in ${modeText} mode with ${wf.steps.length} steps`,
+      ),
+    );
 
-      let previousUserInput: string | undefined;
-      for (let i = 0; i < wf.steps.length; i += 1) {
-        const step = wf.steps[i];
-        console.log(cyan(`Step ${i + 1}/${wf.steps.length}`));
-        console.log(gray(`Instruction: ${step.instruction}`));
-        console.log(gray(`Reproduce: ${step.reproduction}`));
-        if (step.note) {
-          console.log(gray(`Note: ${step.note}`));
+    for (let i = 0; i < wf.steps.length; i += 1) {
+      const step = wf.steps[i];
+      console.log(cyan(`Step ${i + 1}/${wf.steps.length}`));
+      console.log(gray(`Instruction: ${step.instruction}`));
+      console.log(gray(`Reproduce: ${step.reproduction}`));
+      if (step.note) {
+        console.log(gray(`Note: ${step.note}`));
+      }
+
+      let refinement: string | undefined = undefined;
+      let stepFinished = false;
+      let attempts = 0;
+      const maxAttempts = autoMode ? 3 : 1; // Auto mode allows retries, interactive mode doesn't
+
+      while (!stepFinished && attempts < maxAttempts) {
+        attempts++;
+        if (autoMode) {
+          console.log(
+            yellow(`[Auto Mode] Attempt ${attempts}/${maxAttempts}`),
+          );
         }
 
-        let refinement: string | undefined = undefined;
-        let stepFinished = false;
-        let attempts = 0;
-        const maxAttempts = autoMode ? 3 : 1; // Auto mode allows retries, interactive mode doesn't
-
-        while (!stepFinished && attempts < maxAttempts) {
-          attempts++;
-          if (autoMode) {
-            console.log(
-              yellow(`[Auto Mode] Attempt ${attempts}/${maxAttempts}`),
-            );
-          }
-
-          const prompt = `Reproduce the following browser automation step using the available tools.
+        const prompt = `Reproduce the following browser automation step using the available tools.
 
 Rules:
 - Keep calling tools until the step is fully completed; do not stop after a single call.
@@ -81,76 +67,72 @@ Rules:
 - When finished, output a single line starting with 'DONE'.
 
 Step: ${step.reproduction}
-${refinement ? `Refinement: ${refinement}` : ""}
-${previousUserInput ? `User input from the previous step: ${previousUserInput}` : ""}`;
+${refinement ? `Refinement: ${refinement}` : ""}`;
 
-          if (getLogLevel() === "debug") {
-            console.log(gray("[Runner] About to run model for this step with the following prompt:"));
-            console.log(gray(prompt));
+        if (getLogLevel() === "debug") {
+          console.log(gray("[Runner] About to run model for this step with the following prompt:"));
+          console.log(gray(prompt));
+        }
+
+        const result = await generateText({
+          model: model,
+          tools: allTools,
+          prompt,
+          stopWhen: stepCountIs(10),
+        });
+
+        printModelResult(result, "Runner");
+
+        if (autoMode) {
+          // Auto mode logic: assume step is complete if tools were called or "DONE" is output
+          const outputText = (result.text ?? "").trim().toLowerCase();
+          if (outputText.includes("done") || result.toolCalls.length > 0) {
+            stepFinished = true;
+            console.log(
+              green(`[Auto Mode] Step ${i + 1} completed successfully`),
+            );
+          } else if (attempts >= maxAttempts) {
+            console.log(
+              red(
+                `[Auto Mode] Step ${i + 1} failed after ${maxAttempts} attempts, continuing to next step`,
+              ),
+            );
+            stepFinished = true;
+          } else {
+            console.log(
+              yellow(`[Auto Mode] Step ${i + 1} incomplete, retrying...`),
+            );
+            // Add a small delay between attempts
+            await new Promise((resolve) => setTimeout(resolve, 1000));
           }
-
-          const result = await generateText({
-            model: model,
-            tools: allTools,
-            prompt,
-            stopWhen: stepCountIs(10),
+        } else {
+          // Interactive mode logic: ask user for decision
+          const decision = await select({
+            message: "Is this step finished?",
+            choices: [
+              { name: "Continue to next step", value: "continue" },
+              { name: "Re-run with change instructions", value: "refine" },
+              { name: "Abort workflow", value: "abort" },
+            ] as const,
           });
 
-          printModelResult(result, "Runner");
-
-          if (autoMode) {
-            // Auto mode logic: assume step is complete if tools were called or "DONE" is output
-            const outputText = (result.text ?? "").trim().toLowerCase();
-            if (outputText.includes("done") || result.toolCalls.length > 0) {
-              stepFinished = true;
-              console.log(
-                green(`[Auto Mode] Step ${i + 1} completed successfully`),
-              );
-            } else if (attempts >= maxAttempts) {
-              console.log(
-                red(
-                  `[Auto Mode] Step ${i + 1} failed after ${maxAttempts} attempts, continuing to next step`,
-                ),
-              );
-              stepFinished = true;
-            } else {
-              console.log(
-                yellow(`[Auto Mode] Step ${i + 1} incomplete, retrying...`),
-              );
-              // Add a small delay between attempts
-              await new Promise((resolve) => setTimeout(resolve, 1000));
-            }
-          } else {
-            // Interactive mode logic: ask user for decision
-            const decision = await select({
-              message: "Is this step finished?",
-              choices: [
-                { name: "Continue to next step", value: "continue" },
-                { name: "Re-run with change instructions", value: "refine" },
-                { name: "Abort workflow", value: "abort" },
-              ] as const,
+          if (decision === "continue") {
+            stepFinished = true;
+          } else if (decision === "refine") {
+            const r = await input({
+              message: "Describe changes to apply and re-run:",
+              default: refinement ?? "",
             });
-
-            if (decision === "continue") {
-              stepFinished = true;
-            } else if (decision === "refine") {
-              const r = await input({
-                message: "Describe changes to apply and re-run:",
-                default: refinement ?? "",
-              });
-              refinement = r || undefined;
-            } else {
-              throw new Error("Workflow aborted by user");
-            }
+            refinement = r || undefined;
+          } else {
+            throw new Error("Workflow aborted by user");
           }
         }
       }
-
-      const completionText = autoMode ? "completed in AUTO mode" : "completed";
-      console.log(green(`Workflow ${completionText}.`));
-    } finally {
-      await this.disconnect();
     }
+
+    const completionText = autoMode ? "completed in AUTO mode" : "completed";
+    console.log(green(`Workflow ${completionText}.`));
   }
 
   private async selectWorkflow(pref?: string): Promise<string> {

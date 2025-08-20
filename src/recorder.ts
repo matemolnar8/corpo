@@ -9,83 +9,70 @@ import { input, select } from "@inquirer/prompts";
 import { model } from "./model.ts";
 
 export class WorkflowRecorder {
-  private mcp?: PlaywrightMCP;
-
-  async connect(): Promise<void> {
-    const mcp = new PlaywrightMCP();
-    await mcp.connect();
-    this.mcp = mcp;
-  }
-
-  async disconnect() {
-    if (this.mcp) await this.mcp.disconnect();
-  }
+  constructor(private mcp: PlaywrightMCP) {}
 
   async interactiveRecord(): Promise<void> {
-    await this.connect();
     resetVariables();
-    try {
-      if (!this.mcp) throw new Error("Not connected");
-      const mcpTools = await this.mcp.getAiTools();
-      const allTools = {
-        ...mcpTools,
-        userInput: userInputTool,
-        storeVariable: storeVariableTool,
-        retrieveVariable: retrieveVariableTool,
-      };
+    const mcpTools = await this.mcp.getAiTools();
+    const allTools = {
+      ...mcpTools,
+      userInput: userInputTool,
+      storeVariable: storeVariableTool,
+      retrieveVariable: retrieveVariableTool,
+    };
 
-      console.log(
-        gray(
-          `[Recorder] Exposed tools: ${Object.keys(allTools).join(", ") || "<none>"}`,
-        ),
+    console.log(
+      gray(
+        `[Recorder] Exposed tools: ${Object.keys(allTools).join(", ") || "<none>"}`,
+      ),
+    );
+    const steps: WorkflowStep[] = [];
+
+    const workflowName = await input({
+      message: "Workflow name:",
+      required: true,
+    });
+    const workflowDescription = await input({
+      message: "Description (optional):",
+    });
+
+    // Guidance
+    console.log(
+      cyan(
+        "Recording started. Describe each step in natural language (e.g., 'open https://intranet and sign in', 'click the Bookings tab', 'copy the booking dates'). The agent will pick a tool and arguments. Type 'done' to finish.",
+      ),
+    );
+
+    // Loop adding steps
+    while (true) {
+      const action = await select(
+        {
+          message: "Next action:",
+          choices: [
+            { name: "Add step", value: "add" },
+            { name: "Finish and save", value: "done" },
+            { name: "Cancel", value: "cancel" },
+          ] as const,
+        },
       );
-      const steps: WorkflowStep[] = [];
 
-      const workflowName = await input({
-        message: "Workflow name:",
+      if (action === "done") break;
+      if (action === "cancel") {
+        console.log(yellow("Cancelled; no workflow saved."));
+        return;
+      }
+
+      const nextAction = await input({
+        message: "Describe the next action:",
         required: true,
       });
-      const workflowDescription = await input({
-        message: "Description (optional):",
-      });
 
-      // Guidance
-      console.log(
-        cyan(
-          "Recording started. Describe each step in natural language (e.g., 'open https://intranet and sign in', 'click the Bookings tab', 'copy the booking dates'). The agent will pick a tool and arguments. Type 'done' to finish.",
-        ),
-      );
-
-      // Loop adding steps
-      while (true) {
-        const action = await select(
-          {
-            message: "Next action:",
-            choices: [
-              { name: "Add step", value: "add" },
-              { name: "Finish and save", value: "done" },
-              { name: "Cancel", value: "cancel" },
-            ] as const,
-          },
-        );
-
-        if (action === "done") break;
-        if (action === "cancel") {
-          console.log(yellow("Cancelled; no workflow saved."));
-          return;
-        }
-
-        const nextAction = await input({
-          message: "Describe the next action:",
-          required: true,
-        });
-
-        // Per-step refinement loop: plan -> execute -> validate -> (maybe refine and re-run)
-        let accepted = false;
-        let refinement: string | undefined = undefined;
-        while (!accepted) {
-          const prompt =
-            `You are recording a browser automation workflow. Use the available tools to perform the user's step end-to-end.
+      // Per-step refinement loop: plan -> execute -> validate -> (maybe refine and re-run)
+      let accepted = false;
+      let refinement: string | undefined = undefined;
+      while (!accepted) {
+        const prompt =
+          `You are recording a browser automation workflow. Use the available tools to perform the user's step end-to-end.
 
 Rules:
 - Keep calling tools as needed until the step is fully completed; do not stop after a single tool call.
@@ -98,81 +85,78 @@ User step: ${nextAction}
 ${refinement ? `Refinement: ${refinement}` : ""}
 `;
 
-          if (getLogLevel() === "debug") {
-            console.log(gray("[Recorder] About to run model for this step with the following prompt:"));
-            console.log(gray(prompt));
-          }
+        if (getLogLevel() === "debug") {
+          console.log(gray("[Recorder] About to run model for this step with the following prompt:"));
+          console.log(gray(prompt));
+        }
 
-          const result = await generateText({
-            model: model,
-            tools: allTools,
-            prompt,
-            stopWhen: stepCountIs(10),
+        const result = await generateText({
+          model: model,
+          tools: allTools,
+          prompt,
+          stopWhen: stepCountIs(10),
+        });
+
+        // Use shared utility to print model results
+        printModelResult(result, "Recorder");
+
+        const resultText = result.text?.trim() ?? "";
+        if (resultText) {
+          console.log(gray("[Recorder] Model final text:"));
+          console.log(resultText);
+        }
+
+        const decision = await select({
+          message: "Validate this step:",
+          choices: [
+            { name: "Looks good, save step", value: "accept" },
+            { name: "Provide change instructions and re-run", value: "refine" },
+            { name: "Discard this step", value: "discard" },
+          ] as const,
+        });
+
+        if (decision === "accept") {
+          const note = await input({
+            message: "Optional note for this step:",
           });
 
-          // Use shared utility to print model results
-          printModelResult(result, "Recorder");
-
-          const resultText = result.text?.trim() ?? "";
-          if (resultText) {
-            console.log(gray("[Recorder] Model final text:"));
-            console.log(resultText);
+          const reproMatch = resultText.match(/^REPRO:\s*(.+)$/m);
+          const reproduction = reproMatch ? reproMatch[1].trim() : (resultText || nextAction).slice(0, 140);
+          if (!reproMatch) {
+            console.log(
+              yellow(
+                "[Recorder] No explicit REPRO: line found; falling back to truncated text/instruction.",
+              ),
+            );
           }
 
-          const decision = await select({
-            message: "Validate this step:",
-            choices: [
-              { name: "Looks good, save step", value: "accept" },
-              { name: "Provide change instructions and re-run", value: "refine" },
-              { name: "Discard this step", value: "discard" },
-            ] as const,
+          steps.push({
+            instruction: nextAction,
+            note: note || undefined,
+            reproduction,
           });
-
-          if (decision === "accept") {
-            const note = await input({
-              message: "Optional note for this step:",
-            });
-
-            const reproMatch = resultText.match(/^REPRO:\s*(.+)$/m);
-            const reproduction = reproMatch ? reproMatch[1].trim() : (resultText || nextAction).slice(0, 140);
-            if (!reproMatch) {
-              console.log(
-                yellow(
-                  "[Recorder] No explicit REPRO: line found; falling back to truncated text/instruction.",
-                ),
-              );
-            }
-
-            steps.push({
-              instruction: nextAction,
-              note: note || undefined,
-              reproduction,
-            });
-            accepted = true;
-          } else if (decision === "refine") {
-            const editRefinement = await input({
-              message: "Describe what to change (the agent will re-run):",
-              default: refinement ?? "",
-            });
-            refinement = editRefinement || undefined;
-          } else {
-            console.log(yellow("Discarded step."));
-            accepted = true;
-          }
+          accepted = true;
+        } else if (decision === "refine") {
+          const editRefinement = await input({
+            message: "Describe what to change (the agent will re-run):",
+            default: refinement ?? "",
+          });
+          refinement = editRefinement || undefined;
+        } else {
+          console.log(yellow("Discarded step."));
+          accepted = true;
         }
       }
-
-      const workflow: Workflow = {
-        name: workflowName,
-        description: workflowDescription || undefined,
-        createdAt: new Date().toISOString(),
-        steps,
-      };
-
-      const file = await saveWorkflow(workflow);
-      console.log(green(`Saved workflow to ${file}`));
-    } finally {
-      await this.disconnect();
     }
+
+    const workflow: Workflow = {
+      name: workflowName,
+      description: workflowDescription || undefined,
+      createdAt: new Date().toISOString(),
+      steps,
+    };
+
+    const file = await saveWorkflow(workflow);
+    console.log(green(`Saved workflow to ${file}`));
   }
 }

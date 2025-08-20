@@ -2,6 +2,7 @@ import { tool } from "ai";
 import { z } from "zod";
 import { MCPClient, MCPTool } from "./mcp-client.ts";
 import { jsonSchema } from "@ai-sdk/provider-utils";
+import { getLogLevel } from "../../utils.ts";
 
 const PLAYWRIGHT_MCP = {
   command: "npx",
@@ -23,14 +24,7 @@ export class PlaywrightMCP {
     "browser_tab_select",
   ];
 
-  constructor() {
-    Deno.addSignalListener("SIGINT", () => {
-      this.disconnect();
-    });
-    Deno.addSignalListener("SIGTERM", () => {
-      this.disconnect();
-    });
-  }
+  constructor() {}
 
   async connect(): Promise<void> {
     const client = new MCPClient({
@@ -38,11 +32,17 @@ export class PlaywrightMCP {
       args: PLAYWRIGHT_MCP.args,
     });
     await client.connect();
+    if (getLogLevel() === "debug") {
+      console.log("Connected to Playwright MCP");
+    }
     this.client = client;
   }
 
   async disconnect(): Promise<void> {
     if (this.client) await this.client.disconnect();
+    if (getLogLevel() === "debug") {
+      console.log("Disconnected from Playwright MCP");
+    }
   }
 
   private getClient(): MCPClient {
