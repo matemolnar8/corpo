@@ -5,7 +5,7 @@ import { getLogLevel, printModelResult } from "./utils.ts";
 import { userInputTool } from "./tools/user-input.ts";
 import { resetVariables, retrieveVariableTool, storeVariableTool } from "./tools/variable.ts";
 import { cyan, gray, green, yellow } from "@std/fmt/colors";
-import { input, select } from "@inquirer/prompts";
+import { input, select } from "./cli_prompts.ts";
 import { model } from "./model.ts";
 
 export class WorkflowRecorder {
@@ -28,11 +28,11 @@ export class WorkflowRecorder {
     );
     const steps: WorkflowStep[] = [];
 
-    const workflowName = await input({
+    const workflowName = input({
       message: "Workflow name:",
       required: true,
     });
-    const workflowDescription = await input({
+    const workflowDescription = input({
       message: "Description (optional):",
     });
 
@@ -45,7 +45,7 @@ export class WorkflowRecorder {
 
     // Loop adding steps
     while (true) {
-      const action = await select(
+      const action = select(
         {
           message: "Next action:",
           choices: [
@@ -62,7 +62,7 @@ export class WorkflowRecorder {
         return;
       }
 
-      const nextAction = await input({
+      const nextAction = input({
         message: "Describe the next action:",
         required: true,
       });
@@ -106,7 +106,7 @@ ${refinement ? `Refinement: ${refinement}` : ""}
           console.log(resultText);
         }
 
-        const decision = await select({
+        const decision = select({
           message: "Validate this step:",
           choices: [
             { name: "Looks good, save step", value: "accept" },
@@ -116,7 +116,7 @@ ${refinement ? `Refinement: ${refinement}` : ""}
         });
 
         if (decision === "accept") {
-          const note = await input({
+          const note = input({
             message: "Optional note for this step:",
           });
 
@@ -137,7 +137,7 @@ ${refinement ? `Refinement: ${refinement}` : ""}
           });
           accepted = true;
         } else if (decision === "refine") {
-          const editRefinement = await input({
+          const editRefinement = input({
             message: "Describe what to change (the agent will re-run):",
             default: refinement ?? "",
           });

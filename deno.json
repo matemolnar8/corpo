@@ -6,7 +6,6 @@
     "@ai-sdk/google": "npm:@ai-sdk/google@^2.0.7",
     "@ai-sdk/openai": "npm:@ai-sdk/openai@^2.0.16",
     "@ai-sdk/provider-utils": "npm:@ai-sdk/provider-utils@^3.0.4",
-    "@inquirer/prompts": "npm:@inquirer/prompts@^7.8.3",
     "@modelcontextprotocol/sdk": "npm:@modelcontextprotocol/sdk@^1.17.3",
     "@std/fmt": "jsr:@std/fmt@^1.0.8",
     "@std/path": "jsr:@std/path@^1.1.2",

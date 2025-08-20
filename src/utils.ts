@@ -1,5 +1,6 @@
-import { blue, cyan, gray, green, magenta, red, yellow } from "@std/fmt/colors";
+import { blue, cyan, gray, green, yellow } from "@std/fmt/colors";
 import { GenerateTextResult } from "ai";
+import { disconnectPlaywrightMCP } from "./tools/mcp/playwright-mcp.ts";
 
 export type LogLevel = "default" | "debug";
 
@@ -96,4 +97,9 @@ export function stringifySmall(v: unknown): string {
   } catch {
     return String(v);
   }
+}
+
+export async function exit(code = 0) {
+  await disconnectPlaywrightMCP();
+  Deno.exit(code);
 }

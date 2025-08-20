@@ -1,8 +1,8 @@
 import { Command } from "commander";
 import { WorkflowRecorder } from "./recorder.ts";
 import { WorkflowRunner } from "./runner.ts";
-import { setLogLevel } from "./utils.ts";
-import { PlaywrightMCP } from "./tools/mcp/playwright-mcp.ts";
+import { exit, setLogLevel } from "./utils.ts";
+import { connectPlaywrightMCP } from "./tools/mcp/playwright-mcp.ts";
 
 const program = new Command();
 
@@ -11,19 +11,10 @@ async function setup() {
   if (options.debug) {
     setLogLevel("debug");
   }
-  const mcp = new PlaywrightMCP();
-  await mcp.connect();
 
-  async function exit(code = 0) {
-    await mcp.disconnect();
-    Deno.exit(code);
-  }
+  const mcp = await connectPlaywrightMCP();
 
-  Deno.addSignalListener("SIGINT", () => {
-    void exit(1);
-  });
-
-  return { mcp, exit };
+  return { mcp };
 }
 
 program
@@ -38,7 +29,7 @@ program
   .command("record")
   .description("Record a workflow using Playwright MCP server")
   .action(async () => {
-    const { mcp, exit } = await setup();
+    const { mcp } = await setup();
     const recorder = new WorkflowRecorder(mcp);
     await recorder.interactiveRecord();
     await exit();
@@ -49,7 +40,7 @@ program
   .description("Run a saved workflow via Playwright MCP server")
   .argument("[name]", "Workflow name to run")
   .action(async (name: string | undefined) => {
-    const { mcp, exit } = await setup();
+    const { mcp } = await setup();
     const runner = new WorkflowRunner(mcp);
     await runner.run(name, false);
     await exit();
@@ -60,7 +51,7 @@ program
   .description("Run a saved workflow automatically without user prompts")
   .argument("[name]", "Workflow name to run")
   .action(async (name: string | undefined) => {
-    const { mcp, exit } = await setup();
+    const { mcp } = await setup();
     const runner = new WorkflowRunner(mcp);
     await runner.run(name, true);
     await exit();

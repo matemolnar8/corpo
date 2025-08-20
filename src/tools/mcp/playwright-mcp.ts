@@ -91,3 +91,14 @@ export class PlaywrightMCP {
     return this.buildAiTools(tools);
   }
 }
+
+const playwrightMCP = new PlaywrightMCP();
+
+export const connectPlaywrightMCP = async () => {
+  await playwrightMCP.connect();
+  return playwrightMCP;
+};
+
+export const disconnectPlaywrightMCP = async () => {
+  await playwrightMCP.disconnect();
+};

@@ -5,7 +5,7 @@ import { getLogLevel, printModelResult } from "./utils.ts";
 import { userInputTool } from "./tools/user-input.ts";
 import { resetVariables, retrieveVariableTool, storeVariableTool } from "./tools/variable.ts";
 import { cyan, gray, green, red, yellow } from "@std/fmt/colors";
-import { input, select } from "@inquirer/prompts";
+import { input, select } from "./cli_prompts.ts";
 import { model } from "./model.ts";
 
 export class WorkflowRunner {
@@ -107,7 +107,7 @@ ${refinement ? `Refinement: ${refinement}` : ""}`;
           }
         } else {
           // Interactive mode logic: ask user for decision
-          const decision = await select({
+          const decision = select({
             message: "Is this step finished?",
             choices: [
               { name: "Continue to next step", value: "continue" },
@@ -119,7 +119,7 @@ ${refinement ? `Refinement: ${refinement}` : ""}`;
           if (decision === "continue") {
             stepFinished = true;
           } else if (decision === "refine") {
-            const r = await input({
+            const r = input({
               message: "Describe changes to apply and re-run:",
               default: refinement ?? "",
             });
@@ -141,7 +141,7 @@ ${refinement ? `Refinement: ${refinement}` : ""}`;
     if (names.length === 0) {
       throw new Error("No saved workflows found. Record one first.");
     }
-    const name = await select({
+    const name = select({
       message: "Select workflow:",
       choices: names.map((n) => ({ name: n, value: n })),
     });

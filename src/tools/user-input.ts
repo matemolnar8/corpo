@@ -1,5 +1,5 @@
 import { tool } from "ai";
-import { input } from "@inquirer/prompts";
+import { input } from "../cli_prompts.ts";
 import z from "zod";
 
 export const userInputInputSchema = z.object({
@@ -14,8 +14,8 @@ export const userInputTool = tool({
   description: "Ask the user for input",
   inputSchema: userInputInputSchema,
   outputSchema: userInputOutputSchema,
-  execute: async ({ question }) => {
-    const answer = await input({ message: question });
+  execute: ({ question }) => {
+    const answer = input({ message: question });
     return { userInput: answer ?? "" };
   },
 });
