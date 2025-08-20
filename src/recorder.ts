@@ -1,4 +1,3 @@
-import { google } from "@ai-sdk/google";
 import { generateText, stepCountIs } from "ai";
 import { saveWorkflow, Workflow, WorkflowStep } from "./workflows.ts";
 import { PlaywrightMCP } from "./tools/mcp/playwright-mcp.ts";
@@ -7,10 +6,10 @@ import { userInputTool } from "./tools/user-input.ts";
 import { resetVariables, retrieveVariableTool, storeVariableTool } from "./tools/variable.ts";
 import { cyan, gray, green, yellow } from "@std/fmt/colors";
 import { input, select } from "@inquirer/prompts";
+import { model } from "./model.ts";
 
 export class WorkflowRecorder {
   private mcp?: PlaywrightMCP;
-  private model = google("gemini-2.0-flash-lite");
 
   async connect(): Promise<void> {
     const mcp = new PlaywrightMCP();
@@ -105,7 +104,7 @@ ${refinement ? `Refinement: ${refinement}` : ""}
           }
 
           const result = await generateText({
-            model: this.model,
+            model: model,
             tools: allTools,
             prompt,
             stopWhen: stepCountIs(10),

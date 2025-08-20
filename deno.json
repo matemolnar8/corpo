@@ -4,6 +4,7 @@
   },
   "imports": {
     "@ai-sdk/google": "npm:@ai-sdk/google@^2.0.7",
+    "@ai-sdk/openai": "npm:@ai-sdk/openai@^2.0.16",
     "@ai-sdk/provider-utils": "npm:@ai-sdk/provider-utils@^3.0.4",
     "@inquirer/prompts": "npm:@inquirer/prompts@^7.8.3",
     "@modelcontextprotocol/sdk": "npm:@modelcontextprotocol/sdk@^1.17.3",

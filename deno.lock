@@ -5,6 +5,7 @@
     "jsr:@std/internal@^1.0.10": "1.0.10",
     "jsr:@std/path@^1.1.2": "1.1.2",
     "npm:@ai-sdk/google@^2.0.7": "2.0.7_zod@4.0.17",
+    "npm:@ai-sdk/openai@^2.0.16": "2.0.16_zod@4.0.17",
     "npm:@ai-sdk/provider-utils@^3.0.4": "3.0.4_zod@4.0.17",
     "npm:@inquirer/prompts@*": "7.8.3",
     "npm:@inquirer/prompts@^7.8.3": "7.8.3",
@@ -38,6 +39,14 @@
     },
     "@ai-sdk/google@2.0.7_zod@4.0.17": {
       "integrity": "sha512-ly+dPu0t9IOzk7E7PC3W7JrFY3gEE2xLj5hNX/3Q78BQochcEfaOLaA+IhelS1yR5la8aE9BFgB4BhoNJMLAlA==",
+      "dependencies": [
+        "@ai-sdk/provider",
+        "@ai-sdk/provider-utils",
+        "zod@4.0.17"
+      ]
+    },
+    "@ai-sdk/openai@2.0.16_zod@4.0.17": {
+      "integrity": "sha512-Boe715q4SkSJedFfAtbP0yuo8DmF9iYElAaDH2g4YgqJqqkskIJJx4hlCYGMMk1eMesRrB2NqZvtOeyTZ/u4fA==",
       "dependencies": [
         "@ai-sdk/provider",
         "@ai-sdk/provider-utils",
@@ -782,6 +791,7 @@
       "jsr:@std/fmt@^1.0.8",
       "jsr:@std/path@^1.1.2",
       "npm:@ai-sdk/google@^2.0.7",
+      "npm:@ai-sdk/openai@^2.0.16",
       "npm:@ai-sdk/provider-utils@^3.0.4",
       "npm:@inquirer/prompts@^7.8.3",
       "npm:@modelcontextprotocol/sdk@^1.17.3",
