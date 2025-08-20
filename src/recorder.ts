@@ -77,6 +77,8 @@ export class WorkflowRecorder {
 Rules:
 - Keep calling tools as needed until the step is fully completed; do not stop after a single tool call.
 - Prefer: take a page snapshot -> analyze snapshot -> perform the precise action (e.g., click) using a robust selector or description.
+- Use browser_evaluate to run JavaScript code in the context of the page. This can be used for finding elements and extracting information. Do not use it for actions that can be performed with other tools.
+- When using browser_evaluate, save the code in REPRO.
 - If the instruction is to click text (e.g., 'Bookings' or 'leading article heading'), first snapshot and analyze to find a stable descriptor, then click using that descriptor.
 - Only when the step is fully done, output a single line starting with 'REPRO:' followed by a concise, imperative description that can reproduce this step later. This instruction should include details that help the runner, like the tools used and a description of how to find the targeted elements.
 - The REPRO line shouldn't mention specific elements unless they are expected to be constant. If the element depends on previous actions, then they should be located dynamically instead of being saved in the instruction.

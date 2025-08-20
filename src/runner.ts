@@ -63,10 +63,12 @@ export class WorkflowRunner {
 Rules:
 - Keep calling tools until the step is fully completed; do not stop after a single call.
 - Prefer: snapshot -> analyze -> act (e.g., click) using robust selectors/descriptions.
+- Use browser_evaluate to run JavaScript code in the context of the page. This can be used for finding elements and extracting information. Do not use it for actions that can be performed with other tools.
 - For clicking text like 'leading article heading', snapshot and analyze to find the best locator, then click that element.
 - When finished, output a single line starting with 'DONE'.
 
-Step: ${step.reproduction}
+Step: ${step.instruction}
+How to reproduce: ${step.reproduction}
 ${refinement ? `Refinement: ${refinement}` : ""}`;
 
         if (getLogLevel() === "debug") {
