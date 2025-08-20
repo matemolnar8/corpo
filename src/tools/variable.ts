@@ -3,6 +3,14 @@ import z from "zod";
 
 const variables = new Map<string, string>();
 
+export const getVariable = (name: string) => {
+  return variables.get(name);
+};
+
+export const setVariable = (name: string, value: string) => {
+  variables.set(name, value);
+};
+
 export const resetVariables = () => {
   variables.clear();
 };
@@ -36,7 +44,7 @@ export const storeVariableTool = tool({
       return { success: false, reason: "Variable already exists" };
     }
 
-    variables.set(name, value);
+    setVariable(name, value);
     console.log(`Variable '${name}' stored with value '${value}'`);
 
     return {
@@ -69,7 +77,7 @@ export const retrieveVariableTool = tool({
       return { success: false, reason: "Variable not found" };
     }
 
-    const value = variables.get(name);
+    const value = getVariable(name);
     console.log(`Variable '${name}' retrieved with value '${value}'`);
 
     return {
