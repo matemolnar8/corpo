@@ -42,7 +42,7 @@ export const storeVariableTool = tool<
   outputSchema: variableOutputSchema,
   execute: ({ name, value, overwrite }) => {
     console.log(
-      `[Custom] Running tool 'storeVariable' with args: ${
+      `[Custom] Running tool 'store_variable' with args: ${
         stringifySmall({ name, valueLength: value.length, overwrite })
       }`,
     );
@@ -51,14 +51,14 @@ export const storeVariableTool = tool<
         `Variable '${name}' already exists and will not be overwritten`,
       );
       const output = { success: false, reason: "Variable already exists" } as const;
-      console.log(`[Custom] Tool 'storeVariable' completed with result: ${stringifySmall(output)}`);
+      console.log(`[Custom] Tool 'store_variable' completed with result: ${stringifySmall(output)}`);
       return output;
     }
 
     setVariable(name, value);
     console.log(`Variable '${name}' stored with value '${value.substring(0, 50)}${value.length > 50 ? "..." : ""}'`);
     const output = { success: true } as const;
-    console.log(`[Custom] Tool 'storeVariable' completed with result: ${stringifySmall(output)}`);
+    console.log(`[Custom] Tool 'store_variable' completed with result: ${stringifySmall(output)}`);
     return output;
   },
 });
@@ -85,11 +85,11 @@ export const retrieveVariableTool = tool<
       .describe("The reason for the success or failure"),
   }),
   execute: ({ name }) => {
-    console.log(`[Custom] Running tool 'retrieveVariable' with args: ${stringifySmall({ name })}`);
+    console.log(`[Custom] Running tool 'retrieve_variable' with args: ${stringifySmall({ name })}`);
     if (!variables.has(name)) {
       console.log(`Variable '${name}' not found`);
       const output = { success: false, reason: "Variable not found" } as const;
-      console.log(`[Custom] Tool 'retrieveVariable' completed with result: ${stringifySmall(output)}`);
+      console.log(`[Custom] Tool 'retrieve_variable' completed with result: ${stringifySmall(output)}`);
       return output;
     }
 
@@ -99,7 +99,7 @@ export const retrieveVariableTool = tool<
       `Variable '${name}' retrieved with value '${value.substring(0, 50)}${value.length > 50 ? "..." : ""}'`,
     );
     const output = { success: true, value } as const;
-    console.log(`[Custom] Tool 'retrieveVariable' completed with result: ${stringifySmall(output)}`);
+    console.log(`[Custom] Tool 'retrieve_variable' completed with result: ${stringifySmall(output)}`);
     return output;
   },
 });

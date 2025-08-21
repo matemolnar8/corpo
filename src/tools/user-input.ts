@@ -16,10 +16,10 @@ export const userInputTool = tool({
   inputSchema: userInputInputSchema,
   outputSchema: userInputOutputSchema,
   execute: ({ question }) => {
-    console.log(`[Custom] Running tool 'userInput' with args: ${stringifySmall({ question })}`);
+    console.log(`[Custom] Running tool 'user_input' with args: ${stringifySmall({ question })}`);
     const answer = input({ message: question });
     const output = { userInput: answer ?? "" } as const;
-    console.log(`[Custom] Tool 'userInput' completed with result: ${stringifySmall(output)}`);
+    console.log(`[Custom] Tool 'user_input' completed with result: ${stringifySmall(output)}`);
     return output;
   },
 });

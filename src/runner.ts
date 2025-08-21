@@ -4,7 +4,7 @@ import { PlaywrightMCP } from "./tools/mcp/playwright-mcp.ts";
 import { getLogLevel, printModelResult } from "./utils.ts";
 import { userInputTool } from "./tools/user-input.ts";
 import { resetVariables, retrieveVariableTool, storeVariableTool } from "./tools/variable.ts";
-import { accessibilityFilterTool } from "./tools/accessibility-tree.ts";
+import { snapshotGetAndFilterTool } from "./tools/snapshot-get-and-filter.ts";
 import { cyan, gray, green, red, yellow } from "@std/fmt/colors";
 import { input, select } from "./cli_prompts.ts";
 import { model } from "./model.ts";
@@ -20,10 +20,10 @@ export class WorkflowRunner {
     const mcpTools = await this.mcp.getAiTools();
     const allTools = {
       ...mcpTools,
-      userInput: userInputTool,
-      storeVariable: storeVariableTool,
-      retrieveVariable: retrieveVariableTool,
-      accessibilityFilter: accessibilityFilterTool,
+      user_input: userInputTool,
+      store_variable: storeVariableTool,
+      retrieve_variable: retrieveVariableTool,
+      snapshot_get_and_filter: snapshotGetAndFilterTool,
     };
     console.log(
       gray(
@@ -67,9 +67,9 @@ Rules:
 - Prefer: snapshot -> analyze -> act (e.g., click) using robust selectors/descriptions.
 - Use browser_evaluate to run JavaScript code in the context of the page. This can be used for finding elements and extracting information. Do not use it for actions that can be performed with other tools.
 - For clicking text like 'leading article heading', snapshot and analyze to find the best locator, then click that element.
-- Use the storeVariable tool to store the result of your actions in a variable when needed to use in a later step.
-- Snapshots can be stored in variables with the snapshotAndSave tool. Use the retrieveVariable tool to get the snapshot and analyze it.
-- Use the accessibilityFilter tool to filter a stored snapshot to find specific elements. This should be preferred as reading the full snapshot by the model is slow and expensive.
+- Use the store_variable tool to store the result of your actions in a variable when needed to use in a later step.
+- Snapshots can be stored in variables with the snapshotAndSave tool. Use the retrieve_variable tool to get the snapshot and analyze it.
+- Use the snapshot_get_and_filter tool to filter a stored snapshot to find specific elements. This should be preferred as reading the full snapshot by the model is slow and expensive.
 - When finished, output a single line starting with 'DONE'. Only output 'DONE' if the step is fully completed. Otherwise, if there was an error, output 'ERROR' and explain the error.
 
 Step: ${step.instruction}

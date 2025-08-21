@@ -1,10 +1,10 @@
 import { expect } from "@std/expect";
-import { accessibilityFilterTool } from "./accessibility-tree.ts";
+import { snapshotGetAndFilterTool } from "./snapshot-get-and-filter.ts";
 import { connectPlaywrightMCP } from "./mcp/playwright-mcp.ts";
 import { getVariable, resetVariables, setVariable } from "./variable.ts";
 import { assertSnapshot } from "@std/testing/snapshot";
 
-Deno.test.ignore("accessibility filter extracts heading and link from applitools snapshot", async (context) => {
+Deno.test("snapshot get and filter extracts heading and link from applitools snapshot", async (context) => {
   resetVariables();
   const mcp = await connectPlaywrightMCP({ headless: true });
 
@@ -13,7 +13,7 @@ Deno.test.ignore("accessibility filter extracts heading and link from applitools
 
   expect(getVariable("applitools_snapshot")).toBeDefined();
 
-  const headingResult = await accessibilityFilterTool.execute!(
+  const headingResult = await snapshotGetAndFilterTool.execute!(
     {
       variable: "applitools_snapshot",
       filter: { role: "heading", text: { contains: "Login" } },
@@ -25,7 +25,7 @@ Deno.test.ignore("accessibility filter extracts heading and link from applitools
   const heading = headingResult as { success: boolean; count: number; yaml?: string };
   assertSnapshot(context, heading);
 
-  const linkResult = await accessibilityFilterTool.execute!(
+  const linkResult = await snapshotGetAndFilterTool.execute!(
     {
       variable: "applitools_snapshot",
       filter: { role: "link", text: { contains: "Sign in" } },
@@ -41,11 +41,11 @@ Deno.test.ignore("accessibility filter extracts heading and link from applitools
   await new Promise((resolve) => setTimeout(resolve, 1000));
 });
 
-Deno.test("accessibility filter extracts Cloudbooking link from okta snapshot", async (context) => {
+Deno.test("snapshot get and filter extracts Cloudbooking link from okta snapshot", async (context) => {
   resetVariables();
   setVariable("okta_snapshot", await Deno.readTextFile("./resources/okta-snapshot.yml"));
 
-  const cloudbookingResult = await accessibilityFilterTool.execute!(
+  const cloudbookingResult = await snapshotGetAndFilterTool.execute!(
     {
       variable: "okta_snapshot",
       filter: { role: "link", text: { contains: "Cloudbooking" } },
@@ -58,11 +58,11 @@ Deno.test("accessibility filter extracts Cloudbooking link from okta snapshot", 
   assertSnapshot(context, cloudbookingResult);
 });
 
-Deno.test("accessibility filter extract bookings from specified date from cloudbooking snapshot", async (context) => {
+Deno.test("snapshot get and filter extract bookings from specified date from cloudbooking snapshot", async (context) => {
   resetVariables();
   setVariable("cloudbooking_snapshot", await Deno.readTextFile("./resources/cloudbooking-snapshot.yml"));
 
-  const bookingsResult = await accessibilityFilterTool.execute!(
+  const bookingsResult = await snapshotGetAndFilterTool.execute!(
     {
       variable: "cloudbooking_snapshot",
       filter: { role: "row", text: { contains: "Jul 2025" } },

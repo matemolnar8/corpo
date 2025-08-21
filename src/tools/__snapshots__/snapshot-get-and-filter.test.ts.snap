@@ -1,6 +1,44 @@
 export const snapshot = {};
 
-snapshot[`accessibility filter extracts Cloudbooking link from okta snapshot 1`] = `
+snapshot[`snapshot get and filter extracts heading and link from applitools snapshot 1`] = `
+{
+  count: 1,
+  json: '[
+  {
+    "role": "heading",
+    "text": "Login Form",
+    "attributes": {
+      "level": 4,
+      "ref": "e6"
+    },
+    "children": [],
+    "rawDescriptor": "heading \\\\"Login Form\\\\" [level=4] [ref=e6]"
+  }
+]',
+  success: true,
+}
+`;
+
+snapshot[`snapshot get and filter extracts heading and link from applitools snapshot 2`] = `
+{
+  count: 1,
+  json: '[
+  {
+    "role": "link",
+    "text": "Sign in",
+    "attributes": {
+      "ref": "e17",
+      "cursor": "pointer"
+    },
+    "children": [],
+    "rawDescriptor": "link \\\\"Sign in\\\\" [ref=e17] [cursor=pointer]"
+  }
+]',
+  success: true,
+}
+`;
+
+snapshot[`snapshot get and filter extracts Cloudbooking link from okta snapshot 1`] = `
 {
   count: 1,
   json: '[
@@ -32,7 +70,7 @@ snapshot[`accessibility filter extracts Cloudbooking link from okta snapshot 1`]
 }
 `;
 
-snapshot[`accessibility filter extract bookings from specified date from cloudbooking snapshot 1`] = `
+snapshot[`snapshot get and filter extract bookings from specified date from cloudbooking snapshot 1`] = `
 {
   count: 14,
   json: '[

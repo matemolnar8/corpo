@@ -187,7 +187,7 @@ function cloneNode(node: AccessibilityNode): AccessibilityNode {
   };
 }
 
-export const accessibilityFilterInputSchema = z.object({
+export const snapshotGetAndFilterInputSchema = z.object({
   variable: z.string().describe("Name of the variable that holds the YAML accessibility snapshot"),
   filter: z
     .object({
@@ -213,18 +213,18 @@ export const accessibilityFilterInputSchema = z.object({
   storeInVariable: z.string().optional().describe("If provided, store the YAML result in this variable name"),
 });
 
-export const accessibilityFilterOutputSchema = z.object({
+export const snapshotGetAndFilterOutputSchema = z.object({
   success: z.boolean(),
   count: z.number().int().nonnegative(),
   json: z.string().optional(),
   reason: z.string().optional(),
 });
 
-export const accessibilityFilterTool = tool({
+export const snapshotGetAndFilterTool = tool({
   description:
     "Parse an accessibility YAML snapshot from a variable and return a filtered subtree by role/text/attributes. Only works when snapshots are saved with the browser_snapshot_and_save tool.",
-  inputSchema: accessibilityFilterInputSchema,
-  outputSchema: accessibilityFilterOutputSchema,
+  inputSchema: snapshotGetAndFilterInputSchema,
+  outputSchema: snapshotGetAndFilterOutputSchema,
   execute: ({ variable, filter, includeSubtree, mode, maxResults, storeInVariable }) => {
     // Start log
     let __argsStr = "";
@@ -233,17 +233,17 @@ export const accessibilityFilterTool = tool({
     } catch {
       __argsStr = String({ variable, filter, includeSubtree, mode, maxResults, storeInVariable });
     }
-    console.log(`[Custom] Running tool 'accessibilityFilter' with args: ${__argsStr}`);
+    console.log(`[Custom] Running tool 'snapshot_get_and_filter' with args: ${__argsStr}`);
     const raw = getVariable(variable);
     if (!raw) {
       try {
         console.log(
-          `[Custom] Tool 'accessibilityFilter' completed with result: ${
+          `[Custom] Tool 'snapshot_get_and_filter' completed with result: ${
             JSON.stringify({ success: false, count: 0, reason: `Variable '${variable}' not found` })
           }`,
         );
       } catch {
-        console.log(`[Custom] Tool 'accessibilityFilter' completed.`);
+        console.log(`[Custom] Tool 'snapshot_get_and_filter' completed.`);
       }
       return { success: false, count: 0, reason: `Variable '${variable}' not found` };
     }
@@ -254,12 +254,12 @@ export const accessibilityFilterTool = tool({
     } catch (err) {
       try {
         console.log(
-          `[Custom] Tool 'accessibilityFilter' completed with result: ${
+          `[Custom] Tool 'snapshot_get_and_filter' completed with result: ${
             JSON.stringify({ success: false, count: 0, reason: `Failed to parse YAML: ${(err as Error).message}` })
           }`,
         );
       } catch {
-        console.log(`[Custom] Tool 'accessibilityFilter' completed.`);
+        console.log(`[Custom] Tool 'snapshot_get_and_filter' completed.`);
       }
       return { success: false, count: 0, reason: `Failed to parse YAML: ${(err as Error).message}` };
     }
@@ -281,12 +281,12 @@ export const accessibilityFilterTool = tool({
     }
     try {
       console.log(
-        `[Custom] Tool 'accessibilityFilter' completed with result: ${
+        `[Custom] Tool 'snapshot_get_and_filter' completed with result: ${
           JSON.stringify({ success: true, count: matches.length, json })
         }`,
       );
     } catch {
-      console.log(`[Custom] Tool 'accessibilityFilter' completed.`);
+      console.log(`[Custom] Tool 'snapshot_get_and_filter' completed.`);
     }
     return { success: true, count: matches.length, json };
   },
