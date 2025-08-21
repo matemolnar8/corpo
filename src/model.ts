@@ -1,4 +1,7 @@
-import { google } from "@ai-sdk/google";
-// import { openai } from "@ai-sdk/openai";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 
-export const model = google("gemini-2.0-flash-lite");
+const openrouter = createOpenRouter({
+  apiKey: Deno.env.get("OPENROUTER_API_KEY") ?? "",
+});
+
+export const model = openrouter("openai/gpt-4.1-mini");

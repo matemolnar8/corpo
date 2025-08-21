@@ -4,6 +4,7 @@ import { PlaywrightMCP } from "./tools/mcp/playwright-mcp.ts";
 import { getLogLevel, printModelResult } from "./utils.ts";
 import { userInputTool } from "./tools/user-input.ts";
 import { resetVariables, retrieveVariableTool, storeVariableTool } from "./tools/variable.ts";
+import { accessibilityFilterTool } from "./tools/accessibility-tree.ts";
 import { cyan, gray, green, red, yellow } from "@std/fmt/colors";
 import { input, select } from "./cli_prompts.ts";
 import { model } from "./model.ts";
@@ -22,6 +23,7 @@ export class WorkflowRunner {
       userInput: userInputTool,
       storeVariable: storeVariableTool,
       retrieveVariable: retrieveVariableTool,
+      accessibilityFilter: accessibilityFilterTool,
     };
     console.log(
       gray(
@@ -48,7 +50,7 @@ export class WorkflowRunner {
       let refinement: string | undefined = undefined;
       let stepFinished = false;
       let attempts = 0;
-      const maxAttempts = autoMode ? 3 : 1; // Auto mode allows retries, interactive mode doesn't
+      const maxAttempts = autoMode ? 3 : Infinity;
 
       while (!stepFinished && attempts < maxAttempts) {
         attempts++;
@@ -65,7 +67,10 @@ Rules:
 - Prefer: snapshot -> analyze -> act (e.g., click) using robust selectors/descriptions.
 - Use browser_evaluate to run JavaScript code in the context of the page. This can be used for finding elements and extracting information. Do not use it for actions that can be performed with other tools.
 - For clicking text like 'leading article heading', snapshot and analyze to find the best locator, then click that element.
-- When finished, output a single line starting with 'DONE'.
+- Use the storeVariable tool to store the result of your actions in a variable when needed to use in a later step.
+- Snapshots can be stored in variables with the snapshotAndSave tool. Use the retrieveVariable tool to get the snapshot and analyze it.
+- Use the accessibilityFilter tool to filter a stored snapshot to find specific elements. This should be preferred as reading the full snapshot by the model is slow and expensive.
+- When finished, output a single line starting with 'DONE'. Only output 'DONE' if the step is fully completed. Otherwise, if there was an error, output 'ERROR' and explain the error.
 
 Step: ${step.instruction}
 How to reproduce: ${step.reproduction}

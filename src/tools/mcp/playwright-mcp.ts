@@ -3,6 +3,7 @@ import { z } from "zod";
 import { MCPClient, MCPTool } from "./mcp-client.ts";
 import { jsonSchema } from "@ai-sdk/provider-utils";
 import { getLogLevel } from "../../utils.ts";
+import { stringifySmall } from "../../log.ts";
 import type { ImageContent, TextContent } from "@modelcontextprotocol/sdk/types.js";
 import { setVariable } from "../variable.ts";
 
@@ -26,6 +27,7 @@ export class PlaywrightMCP {
     "browser_tab_list",
     "browser_tab_select",
     "browser_evaluate",
+    "browser_snapshot",
   ];
 
   constructor() {}
@@ -33,7 +35,7 @@ export class PlaywrightMCP {
   async connect({ headless }: { headless?: boolean } = {}): Promise<void> {
     const client = new MCPClient({
       command: PLAYWRIGHT_MCP.command,
-      args: [...PLAYWRIGHT_MCP.args, headless ? "--headless" : "--headed"],
+      args: headless ? [...PLAYWRIGHT_MCP.args, "--headless"] : [...PLAYWRIGHT_MCP.args],
     });
     await client.connect();
     if (getLogLevel() === "debug") {
@@ -81,9 +83,17 @@ export class PlaywrightMCP {
     return this.callMcpTool(name, args);
   }
 
-  callMcpTool(name: string, args: Record<string, unknown>) {
+  async callMcpTool(name: string, args: Record<string, unknown>) {
     const client = this.getClient();
-    return client.callTool(name, args) as Promise<PlaywrightToolOutput>;
+    console.log(`[MCP] Running tool '${name}' with args: ${stringifySmall(args)}`);
+    try {
+      const result = await (client.callTool(name, args) as Promise<PlaywrightToolOutput>);
+      console.log(`[MCP] Tool '${name}' completed with result: ${stringifySmall(result)}`);
+      return result;
+    } catch (err) {
+      console.log(`[MCP] Tool '${name}' errored: ${String(err)}`);
+      throw err;
+    }
   }
 
   buildAiTools(tools: MCPTool[]) {
@@ -100,7 +110,7 @@ export class PlaywrightMCP {
       });
     }
 
-    map["snapshotAndSave"] = this.snapshotAndSaveTool;
+    map["browser_snapshot_and_save"] = this.snapshotAndSaveTool;
 
     return map;
   }
@@ -111,6 +121,7 @@ export class PlaywrightMCP {
       variable: z.string(),
     }),
     execute: async (options) => {
+      console.log(`[Custom] Running tool 'snapshotAndSave' with args: ${stringifySmall(options)}`);
       const { variable } = options;
       const result = await this.callMcpTool("browser_snapshot", {});
 
@@ -125,17 +136,16 @@ export class PlaywrightMCP {
 
       if (!snapshotWithoutYaml) {
         console.log("Couldn't create snapshot.");
-        return { success: false, reason: "Couldn't create snapshot." };
+        const output = { success: false, reason: "Couldn't create snapshot." } as const;
+        console.log(`[Custom] Tool 'snapshotAndSave' completed with result: ${stringifySmall(output)}`);
+        return output;
       }
 
       setVariable(variable, snapshotWithoutYaml);
       console.log(`Snapshot saved to variable '${variable}'`);
-
-      if (getLogLevel() === "debug") {
-        console.log(`Snapshot content: ${snapshotWithoutYaml}`);
-      }
-
-      return { success: true };
+      const output = { success: true } as const;
+      console.log(`[Custom] Tool 'snapshotAndSave' completed with result: ${stringifySmall(output)}`);
+      return output;
     },
   });
 

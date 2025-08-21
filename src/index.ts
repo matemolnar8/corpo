@@ -57,4 +57,9 @@ program
     await exit();
   });
 
+Deno.addSignalListener("SIGINT", async () => {
+  console.log("SIGINT received");
+  await exit(1);
+});
+
 program.parse();

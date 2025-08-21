@@ -1,6 +1,7 @@
 import { blue, cyan, gray, green, yellow } from "@std/fmt/colors";
 import { GenerateTextResult } from "ai";
 import { disconnectPlaywrightMCP } from "./tools/mcp/playwright-mcp.ts";
+import { stringifySmall } from "./log.ts";
 
 export type LogLevel = "default" | "debug";
 
@@ -90,16 +91,8 @@ export function printModelResult(
   }
 }
 
-export function stringifySmall(v: unknown): string {
-  try {
-    const s = JSON.stringify(v);
-    return s.length > 500 ? s.slice(0, 500) + "…" : s;
-  } catch {
-    return String(v);
-  }
-}
-
 export async function exit(code = 0) {
+  console.log("Exiting...");
   await disconnectPlaywrightMCP();
   Deno.exit(code);
 }

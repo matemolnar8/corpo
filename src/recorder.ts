@@ -4,6 +4,7 @@ import { PlaywrightMCP } from "./tools/mcp/playwright-mcp.ts";
 import { getLogLevel, printModelResult } from "./utils.ts";
 import { userInputTool } from "./tools/user-input.ts";
 import { resetVariables, retrieveVariableTool, storeVariableTool } from "./tools/variable.ts";
+import { accessibilityFilterTool } from "./tools/accessibility-tree.ts";
 import { cyan, gray, green, yellow } from "@std/fmt/colors";
 import { input, select } from "./cli_prompts.ts";
 import { model } from "./model.ts";
@@ -19,6 +20,7 @@ export class WorkflowRecorder {
       userInput: userInputTool,
       storeVariable: storeVariableTool,
       retrieveVariable: retrieveVariableTool,
+      accessibilityFilter: accessibilityFilterTool,
     };
 
     console.log(
@@ -72,16 +74,22 @@ export class WorkflowRecorder {
       let refinement: string | undefined = undefined;
       while (!accepted) {
         const prompt =
-          `You are recording a browser automation workflow. Use the available tools to perform the user's step end-to-end.
+          `You are a helpful browser automation assistant. You are recording a browser automation workflow. Use the available tools to perform the user's step, until the step is fully completed.
 
 Rules:
 - Keep calling tools as needed until the step is fully completed; do not stop after a single tool call.
 - Prefer: take a page snapshot -> analyze snapshot -> perform the precise action (e.g., click) using a robust selector or description.
-- Use browser_evaluate to run JavaScript code in the context of the page. This can be used for finding elements and extracting information. Do not use it for actions that can be performed with other tools.
-- When using browser_evaluate, save the code in REPRO.
+- Only when the step is fully done, output a SINGLE line starting with 'REPRO:' followed by a concise, imperative description that can reproduce this step later. This instruction should include details that help the runner, like the tools used and a description of how to find the targeted elements.
+- The REPRO line should only mention specific elements if they are expected to be constant. If the element depends on previous actions, then they should be located dynamically instead of being saved in the instruction.
+- The REPRO line should contain the tools used to perform the step.
 - If the instruction is to click text (e.g., 'Bookings' or 'leading article heading'), first snapshot and analyze to find a stable descriptor, then click using that descriptor.
-- Only when the step is fully done, output a single line starting with 'REPRO:' followed by a concise, imperative description that can reproduce this step later. This instruction should include details that help the runner, like the tools used and a description of how to find the targeted elements.
-- The REPRO line shouldn't mention specific elements unless they are expected to be constant. If the element depends on previous actions, then they should be located dynamically instead of being saved in the instruction.
+
+Tool rules:
+- Use browser_evaluate to run JavaScript code in the context of the page. This can be used for finding elements and extracting information. Do not use it for actions that can be performed with other tools.
+- Use the storeVariable tool to store the result of your actions in a variable when needed to use in a later step.
+- Snapshots can be stored in variables with the snapshotAndSave tool. Use the retrieveVariable tool to get the snapshot and analyze it.
+- Use the accessibilityFilter tool to filter a stored snapshot to find specific elements. This should be preferred as reading the full snapshot by the model is slow and expensive.
+- When using browser_evaluate, save the code in REPRO.
 
 User step: ${nextAction}
 ${refinement ? `Refinement: ${refinement}` : ""}
