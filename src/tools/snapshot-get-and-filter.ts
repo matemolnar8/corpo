@@ -2,6 +2,7 @@ import { tool } from "ai";
 import z from "zod";
 import { parse } from "@std/yaml";
 import { getVariable, setVariable } from "./variable.ts";
+import { logger } from "../log.ts";
 
 type TextMatch =
   | { equals: string }
@@ -233,18 +234,15 @@ export const snapshotGetAndFilterTool = tool({
     } catch {
       __argsStr = String({ variable, filter, includeSubtree, mode, maxResults, storeInVariable });
     }
-    console.log(`[Custom] Running tool 'snapshot_get_and_filter' with args: ${__argsStr}`);
+    logger.debug("Tool", `snapshot_get_and_filter args: ${__argsStr}`);
     const raw = getVariable(variable);
     if (!raw) {
-      try {
-        console.log(
-          `[Custom] Tool 'snapshot_get_and_filter' completed with result: ${
-            JSON.stringify({ success: false, count: 0, reason: `Variable '${variable}' not found` })
-          }`,
-        );
-      } catch {
-        console.log(`[Custom] Tool 'snapshot_get_and_filter' completed.`);
-      }
+      logger.debug(
+        "Tool",
+        `snapshot_get_and_filter result: ${
+          JSON.stringify({ success: false, count: 0, reason: `Variable '${variable}' not found` })
+        }`,
+      );
       return { success: false, count: 0, reason: `Variable '${variable}' not found` };
     }
 
@@ -252,15 +250,12 @@ export const snapshotGetAndFilterTool = tool({
     try {
       parsed = parse(raw);
     } catch (err) {
-      try {
-        console.log(
-          `[Custom] Tool 'snapshot_get_and_filter' completed with result: ${
-            JSON.stringify({ success: false, count: 0, reason: `Failed to parse YAML: ${(err as Error).message}` })
-          }`,
-        );
-      } catch {
-        console.log(`[Custom] Tool 'snapshot_get_and_filter' completed.`);
-      }
+      logger.debug(
+        "Tool",
+        `snapshot_get_and_filter result: ${
+          JSON.stringify({ success: false, count: 0, reason: `Failed to parse YAML: ${(err as Error).message}` })
+        }`,
+      );
       return { success: false, count: 0, reason: `Failed to parse YAML: ${(err as Error).message}` };
     }
 
@@ -279,15 +274,10 @@ export const snapshotGetAndFilterTool = tool({
     if (storeInVariable) {
       setVariable(storeInVariable, json);
     }
-    try {
-      console.log(
-        `[Custom] Tool 'snapshot_get_and_filter' completed with result: ${
-          JSON.stringify({ success: true, count: matches.length, json })
-        }`,
-      );
-    } catch {
-      console.log(`[Custom] Tool 'snapshot_get_and_filter' completed.`);
-    }
+    logger.debug(
+      "Tool",
+      `snapshot_get_and_filter result: ${JSON.stringify({ success: true, count: matches.length, json })}`,
+    );
     return { success: true, count: matches.length, json };
   },
 });

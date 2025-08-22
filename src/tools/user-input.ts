@@ -1,5 +1,5 @@
 import { tool } from "ai";
-import { stringifySmall } from "../log.ts";
+import { logger, stringifySmall } from "../log.ts";
 import { input } from "../cli_prompts.ts";
 import z from "zod";
 
@@ -16,10 +16,10 @@ export const userInputTool = tool({
   inputSchema: userInputInputSchema,
   outputSchema: userInputOutputSchema,
   execute: ({ question }) => {
-    console.log(`[Custom] Running tool 'user_input' with args: ${stringifySmall({ question })}`);
+    logger.debug("Tool", `user_input args: ${stringifySmall({ question })}`);
     const answer = input({ message: question });
     const output = { userInput: answer ?? "" } as const;
-    console.log(`[Custom] Tool 'user_input' completed with result: ${stringifySmall(output)}`);
+    logger.debug("Tool", `user_input result: ${stringifySmall(output)}`);
     return output;
   },
 });

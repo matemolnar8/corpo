@@ -1,11 +1,12 @@
 import { generateText, stepCountIs } from "ai";
 import { listWorkflows, loadWorkflow } from "./workflows.ts";
 import { PlaywrightMCP } from "./tools/mcp/playwright-mcp.ts";
-import { getLogLevel, printModelResult } from "./utils.ts";
+import { printModelResult } from "./utils.ts";
+import { logger } from "./log.ts";
 import { userInputTool } from "./tools/user-input.ts";
 import { resetVariables, retrieveVariableTool, storeVariableTool } from "./tools/variable.ts";
 import { snapshotGetAndFilterTool } from "./tools/snapshot-get-and-filter.ts";
-import { cyan, gray, green, red, yellow } from "@std/fmt/colors";
+import { cyan as _cyan, gray as _gray, green as _green, red as _red, yellow as _yellow } from "@std/fmt/colors";
 import { input, select } from "./cli_prompts.ts";
 import { model } from "./model.ts";
 
@@ -25,26 +26,18 @@ export class WorkflowRunner {
       retrieve_variable: retrieveVariableTool,
       snapshot_get_and_filter: snapshotGetAndFilterTool,
     };
-    console.log(
-      gray(
-        `[Runner] Exposed tools: ${Object.keys(allTools).join(", ") || "<none>"}`,
-      ),
-    );
+    logger.info("Runner", `Exposed tools: ${Object.keys(allTools).join(", ") || "<none>"}`);
 
     const modeText = autoMode ? "AUTO" : "interactive";
-    console.log(
-      cyan(
-        `Running workflow '${wf.name}' in ${modeText} mode with ${wf.steps.length} steps`,
-      ),
-    );
+    logger.info("Runner", `Running workflow '${wf.name}' in ${modeText} mode with ${wf.steps.length} steps`);
 
     for (let i = 0; i < wf.steps.length; i += 1) {
       const step = wf.steps[i];
-      console.log(cyan(`Step ${i + 1}/${wf.steps.length}`));
-      console.log(gray(`Instruction: ${step.instruction}`));
-      console.log(gray(`Reproduce: ${step.reproduction}`));
+      logger.info("Runner", `Step ${i + 1}/${wf.steps.length}`);
+      logger.info("Runner", `Instruction: ${step.instruction}`);
+      logger.info("Runner", `Reproduce: ${step.reproduction}`);
       if (step.note) {
-        console.log(gray(`Note: ${step.note}`));
+        logger.info("Runner", `Note: ${step.note}`);
       }
 
       let refinement: string | undefined = undefined;
@@ -55,9 +48,7 @@ export class WorkflowRunner {
       while (!stepFinished && attempts < maxAttempts) {
         attempts++;
         if (autoMode) {
-          console.log(
-            yellow(`[Auto Mode] Attempt ${attempts}/${maxAttempts}`),
-          );
+          logger.info("Runner", `[Auto Mode] Attempt ${attempts}/${maxAttempts}`);
         }
 
         const prompt = `Reproduce the following browser automation step using the available tools.
@@ -76,10 +67,8 @@ Step: ${step.instruction}
 How to reproduce: ${step.reproduction}
 ${refinement ? `Refinement: ${refinement}` : ""}`;
 
-        if (getLogLevel() === "debug") {
-          console.log(gray("[Runner] About to run model for this step with the following prompt:"));
-          console.log(gray(prompt));
-        }
+        logger.debug("Runner", "About to run model for this step with the following prompt:");
+        logger.debug("Runner", prompt);
 
         const result = await generateText({
           model: model,
@@ -95,20 +84,15 @@ ${refinement ? `Refinement: ${refinement}` : ""}`;
           const outputText = (result.text ?? "").trim().toLowerCase();
           if (outputText.includes("done") || result.toolCalls.length > 0) {
             stepFinished = true;
-            console.log(
-              green(`[Auto Mode] Step ${i + 1} completed successfully`),
-            );
+            logger.success("Runner", `[Auto Mode] Step ${i + 1} completed successfully`);
           } else if (attempts >= maxAttempts) {
-            console.log(
-              red(
-                `[Auto Mode] Step ${i + 1} failed after ${maxAttempts} attempts, continuing to next step`,
-              ),
+            logger.error(
+              "Runner",
+              `[Auto Mode] Step ${i + 1} failed after ${maxAttempts} attempts, continuing to next step`,
             );
             stepFinished = true;
           } else {
-            console.log(
-              yellow(`[Auto Mode] Step ${i + 1} incomplete, retrying...`),
-            );
+            logger.warn("Runner", `[Auto Mode] Step ${i + 1} incomplete, retrying...`);
             // Add a small delay between attempts
             await new Promise((resolve) => setTimeout(resolve, 1000));
           }
@@ -139,7 +123,7 @@ ${refinement ? `Refinement: ${refinement}` : ""}`;
     }
 
     const completionText = autoMode ? "completed in AUTO mode" : "completed";
-    console.log(green(`Workflow ${completionText}.`));
+    logger.success("Runner", `Workflow ${completionText}.`);
   }
 
   private async selectWorkflow(pref?: string): Promise<string> {

@@ -1,11 +1,11 @@
 import { generateText, stepCountIs } from "ai";
 import { saveWorkflow, Workflow, WorkflowStep } from "./workflows.ts";
 import { PlaywrightMCP } from "./tools/mcp/playwright-mcp.ts";
-import { getLogLevel, printModelResult } from "./utils.ts";
+import { printModelResult } from "./utils.ts";
+import { logger } from "./log.ts";
 import { userInputTool } from "./tools/user-input.ts";
 import { resetVariables, retrieveVariableTool, storeVariableTool } from "./tools/variable.ts";
 import { snapshotGetAndFilterTool } from "./tools/snapshot-get-and-filter.ts";
-import { cyan, gray, green, yellow } from "@std/fmt/colors";
 import { input, select } from "./cli_prompts.ts";
 import { model } from "./model.ts";
 
@@ -23,11 +23,7 @@ export class WorkflowRecorder {
       snapshot_get_and_filter: snapshotGetAndFilterTool,
     };
 
-    console.log(
-      gray(
-        `[Recorder] Exposed tools: ${Object.keys(allTools).join(", ") || "<none>"}`,
-      ),
-    );
+    logger.info("Recorder", `Exposed tools: ${Object.keys(allTools).join(", ") || "<none>"}`);
     const steps: WorkflowStep[] = [];
 
     const workflowName = input({
@@ -39,10 +35,9 @@ export class WorkflowRecorder {
     });
 
     // Guidance
-    console.log(
-      cyan(
-        "Recording started. Describe each step in natural language (e.g., 'open https://intranet and sign in', 'click the Bookings tab', 'copy the booking dates'). The agent will pick a tool and arguments. Type 'done' to finish.",
-      ),
+    logger.info(
+      "Recorder",
+      "Recording started. Describe each step in natural language (e.g., 'open https://intranet and sign in', 'click the Bookings tab', 'copy the booking dates'). The agent will pick a tool and arguments. Type 'done' to finish.",
     );
 
     // Loop adding steps
@@ -60,7 +55,7 @@ export class WorkflowRecorder {
 
       if (action === "done") break;
       if (action === "cancel") {
-        console.log(yellow("Cancelled; no workflow saved."));
+        logger.warn("Recorder", "Cancelled; no workflow saved.");
         return;
       }
 
@@ -95,10 +90,8 @@ User step: ${nextAction}
 ${refinement ? `Refinement: ${refinement}` : ""}
 `;
 
-        if (getLogLevel() === "debug") {
-          console.log(gray("[Recorder] About to run model for this step with the following prompt:"));
-          console.log(gray(prompt));
-        }
+        logger.debug("Recorder", "About to run model for this step with the following prompt:");
+        logger.debug("Recorder", prompt);
 
         const result = await generateText({
           model: model,
@@ -111,10 +104,6 @@ ${refinement ? `Refinement: ${refinement}` : ""}
         printModelResult(result, "Recorder");
 
         const resultText = result.text?.trim() ?? "";
-        if (resultText) {
-          console.log(gray("[Recorder] Model final text:"));
-          console.log(resultText);
-        }
 
         const decision = select({
           message: "Validate this step:",
@@ -133,11 +122,7 @@ ${refinement ? `Refinement: ${refinement}` : ""}
           const reproMatch = resultText.match(/^REPRO:\s*(.+)$/m);
           const reproduction = reproMatch ? reproMatch[1].trim() : (resultText || nextAction).slice(0, 140);
           if (!reproMatch) {
-            console.log(
-              yellow(
-                "[Recorder] No explicit REPRO: line found; falling back to truncated text/instruction.",
-              ),
-            );
+            logger.warn("Recorder", "No explicit REPRO: line found; falling back to truncated text/instruction.");
           }
 
           steps.push({
@@ -153,7 +138,7 @@ ${refinement ? `Refinement: ${refinement}` : ""}
           });
           refinement = editRefinement || undefined;
         } else {
-          console.log(yellow("Discarded step."));
+          logger.warn("Recorder", "Discarded step.");
           accepted = true;
         }
       }
@@ -167,6 +152,6 @@ ${refinement ? `Refinement: ${refinement}` : ""}
     };
 
     const file = await saveWorkflow(workflow);
-    console.log(green(`Saved workflow to ${file}`));
+    logger.success("Recorder", `Saved workflow to ${file}`);
   }
 }

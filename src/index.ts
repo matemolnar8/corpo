@@ -1,7 +1,8 @@
 import { Command } from "commander";
 import { WorkflowRecorder } from "./recorder.ts";
 import { WorkflowRunner } from "./runner.ts";
-import { exit, setLogLevel } from "./utils.ts";
+import { exit } from "./utils.ts";
+import { setLogLevel } from "./log.ts";
 import { connectPlaywrightMCP } from "./tools/mcp/playwright-mcp.ts";
 
 const program = new Command();
@@ -58,7 +59,6 @@ program
   });
 
 Deno.addSignalListener("SIGINT", async () => {
-  console.log("SIGINT received");
   await exit(1);
 });
 

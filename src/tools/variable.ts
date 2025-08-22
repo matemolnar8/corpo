@@ -1,5 +1,5 @@
 import { tool } from "ai";
-import { stringifySmall } from "../log.ts";
+import { logger, stringifySmall } from "../log.ts";
 import z from "zod";
 
 const variables = new Map<string, string>();
@@ -41,24 +41,24 @@ export const storeVariableTool = tool<
   inputSchema: variableInputSchema,
   outputSchema: variableOutputSchema,
   execute: ({ name, value, overwrite }) => {
-    console.log(
-      `[Custom] Running tool 'store_variable' with args: ${
-        stringifySmall({ name, valueLength: value.length, overwrite })
-      }`,
+    logger.debug(
+      "Tool",
+      `store_variable args: ${stringifySmall({ name, valueLength: value.length, overwrite })}`,
     );
     if (variables.has(name) && !overwrite) {
-      console.log(
-        `Variable '${name}' already exists and will not be overwritten`,
-      );
+      logger.warn("Tool", `Variable '${name}' already exists and will not be overwritten`);
       const output = { success: false, reason: "Variable already exists" } as const;
-      console.log(`[Custom] Tool 'store_variable' completed with result: ${stringifySmall(output)}`);
+      logger.debug("Tool", `store_variable result: ${stringifySmall(output)}`);
       return output;
     }
 
     setVariable(name, value);
-    console.log(`Variable '${name}' stored with value '${value.substring(0, 50)}${value.length > 50 ? "..." : ""}'`);
+    logger.info(
+      "Tool",
+      `Variable '${name}' stored with value '${value.substring(0, 50)}${value.length > 50 ? "..." : ""}'`,
+    );
     const output = { success: true } as const;
-    console.log(`[Custom] Tool 'store_variable' completed with result: ${stringifySmall(output)}`);
+    logger.debug("Tool", `store_variable result: ${stringifySmall(output)}`);
     return output;
   },
 });
@@ -85,21 +85,22 @@ export const retrieveVariableTool = tool<
       .describe("The reason for the success or failure"),
   }),
   execute: ({ name }) => {
-    console.log(`[Custom] Running tool 'retrieve_variable' with args: ${stringifySmall({ name })}`);
+    logger.debug("Tool", `retrieve_variable args: ${stringifySmall({ name })}`);
     if (!variables.has(name)) {
-      console.log(`Variable '${name}' not found`);
+      logger.warn("Tool", `Variable '${name}' not found`);
       const output = { success: false, reason: "Variable not found" } as const;
-      console.log(`[Custom] Tool 'retrieve_variable' completed with result: ${stringifySmall(output)}`);
+      logger.debug("Tool", `retrieve_variable result: ${stringifySmall(output)}`);
       return output;
     }
 
     const value = getVariable(name) as string;
 
-    console.log(
+    logger.info(
+      "Tool",
       `Variable '${name}' retrieved with value '${value.substring(0, 50)}${value.length > 50 ? "..." : ""}'`,
     );
     const output = { success: true, value } as const;
-    console.log(`[Custom] Tool 'retrieve_variable' completed with result: ${stringifySmall(output)}`);
+    logger.debug("Tool", `retrieve_variable result: ${stringifySmall(output)}`);
     return output;
   },
 });

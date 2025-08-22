@@ -1,19 +1,6 @@
-import { blue, cyan, gray, green, yellow } from "@std/fmt/colors";
 import { GenerateTextResult } from "ai";
 import { disconnectPlaywrightMCP } from "./tools/mcp/playwright-mcp.ts";
-import { stringifySmall } from "./log.ts";
-
-export type LogLevel = "default" | "debug";
-
-let currentLogLevel: LogLevel = "default";
-
-export function setLogLevel(level: LogLevel): void {
-  currentLogLevel = level;
-}
-
-export function getLogLevel(): LogLevel {
-  return currentLogLevel;
-}
+import { getLogLevel, logger, stringifySmall } from "./log.ts";
 
 // Shared utility function for printing AI-SDK model results
 export function printModelResult(
@@ -22,18 +9,17 @@ export function printModelResult(
   context: string,
 ): void {
   // Always log basic info
-  console.log(
-    gray(
-      `[${context}] toolCalls: ${result.toolCalls.length}, toolResults: ${result.toolResults.length}, tokens in: ${result.totalUsage.inputTokens}, tokens out: ${result.totalUsage.outputTokens}, total tokens: ${result.totalUsage.totalTokens}`,
-    ),
+  logger.info(
+    context,
+    `toolCalls: ${result.toolCalls.length}, toolResults: ${result.toolResults.length}, tokens in: ${result.totalUsage.inputTokens}, tokens out: ${result.totalUsage.outputTokens}, total tokens: ${result.totalUsage.totalTokens}`,
   );
 
   // Print tool calls from result.steps
   if (result.steps && result.steps.length > 0) {
-    console.log(blue(`[${context}] Steps executed: ${result.steps.length}`));
+    logger.info(context, `Steps executed: ${result.steps.length}`);
     for (let stepIndex = 0; stepIndex < result.steps.length; stepIndex++) {
       const step = result.steps[stepIndex];
-      console.log(blue(`[${context}] Step ${stepIndex + 1}:`));
+      logger.info(context, `Step ${stepIndex + 1}:`);
       if (step.toolCalls && step.toolCalls.length > 0) {
         for (
           let toolIndex = 0;
@@ -46,53 +32,42 @@ export function printModelResult(
           );
 
           // Default level: just tool name and args in one line
-          if (currentLogLevel === "default") {
+          if (getLogLevel() === "default") {
             const args = stringifySmall(tc.input);
-            console.log(
-              cyan(
-                `  Tool ${toolIndex + 1}/${step.toolCalls.length}: ${tc.toolName}(${args})`,
-              ),
-            );
+            logger.info(context, `  Tool ${toolIndex + 1}/${step.toolCalls.length}: ${tc.toolName}(${args})`);
           } else {
             // Debug level: detailed logging
-            console.log(
-              cyan(
-                `  Tool ${toolIndex + 1}/${step.toolCalls.length}: ${tc.toolName}`,
-              ),
-            );
-            console.log(gray("  Input:"), stringifySmall(tc.input));
+            logger.debug(context, `  Tool ${toolIndex + 1}/${step.toolCalls.length}: ${tc.toolName}`);
+            logger.debug(context, `  Input: ${stringifySmall(tc.input)}`);
             if (tr) {
-              console.log(green("  Result:"), stringifySmall(tr.output));
+              logger.debug(context, `  Result: ${stringifySmall(tr.output)}`);
             }
           }
         }
       } else {
-        console.log(yellow("  No tools called in this step"));
+        logger.info(context, "  No tools called in this step");
       }
     }
   } else {
-    console.log(yellow(`[${context}] No tools were called.`));
+    logger.info(context, "No tools were called.");
   }
 
-  // Debug level: additional logging
-  if (currentLogLevel === "debug") {
-    console.log(
-      gray(`[${context}] finishReason: ${result.finishReason ?? "unknown"}`),
-    );
-    if (result.usage) {
-      console.log(gray(`[${context}] usage: ${JSON.stringify(result.usage)}`));
-    }
+  logger.debug(context, `finishReason: ${result.finishReason ?? "unknown"}`);
+  if (result.usage) {
+    logger.debug(context, `usage: ${JSON.stringify(result.usage)}`);
   }
 
   // Always log final text
   if ((result.text ?? "").trim()) {
-    console.log(gray(`[${context}] Model final text:`));
+    logger.info(context, "Model final text:");
     console.log((result.text ?? "").trim());
   }
 }
 
 export async function exit(code = 0) {
-  console.log("Exiting...");
+  logger.info("Core", "Exiting...");
   await disconnectPlaywrightMCP();
+  // Sleep to ensure the MCP process is killed
+  await new Promise((resolve) => setTimeout(resolve, 1000));
   Deno.exit(code);
 }
