@@ -1,7 +1,7 @@
 import { expect } from "@std/expect";
 import { assertSnapshot } from "@std/testing/snapshot";
 import { connectPlaywrightMCP } from "./playwright-mcp.ts";
-import { setLogLevel } from "../../utils.ts";
+import { setLogLevel } from "../../log.ts";
 import { getVariable, resetVariables } from "../variable.ts";
 import { parse } from "@std/yaml";
 
