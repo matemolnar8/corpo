@@ -104,3 +104,10 @@ export const retrieveVariableTool = tool<
     return output;
   },
 });
+
+export const listVariablesTool = tool({
+  description: "List names of stored workflow variables",
+  inputSchema: z.object({}),
+  outputSchema: z.object({ names: z.array(z.string()) }),
+  execute: () => ({ names: Array.from(variables.keys()) }),
+});

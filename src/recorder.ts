@@ -4,7 +4,7 @@ import { PlaywrightMCP } from "./tools/mcp/playwright-mcp.ts";
 import { printModelResult } from "./utils.ts";
 import { logger } from "./log.ts";
 import { userInputTool } from "./tools/user-input.ts";
-import { resetVariables, retrieveVariableTool, storeVariableTool } from "./tools/variable.ts";
+import { listVariablesTool, resetVariables, retrieveVariableTool, storeVariableTool } from "./tools/variable.ts";
 import { snapshotGetAndFilterTool } from "./tools/snapshot-get-and-filter.ts";
 import { input, select } from "./cli_prompts.ts";
 import { model } from "./model.ts";
@@ -21,6 +21,7 @@ export class WorkflowRecorder {
       store_variable: storeVariableTool,
       retrieve_variable: retrieveVariableTool,
       snapshot_get_and_filter: snapshotGetAndFilterTool,
+      list_variables: listVariablesTool,
     };
 
     logger.info("Recorder", `Exposed tools: ${Object.keys(allTools).join(", ") || "<none>"}`);
@@ -82,7 +83,7 @@ Rules:
 Tool rules:
 - Use browser_evaluate to run JavaScript code in the context of the page. This can be used for finding elements and extracting information. Do not use it for actions that can be performed with other tools.
 - Use the store_variable tool to store the result of your actions in a variable when needed to use in a later step.
-- Snapshots can be stored in variables with the snapshotAndSave tool. Use the retrieve_variable tool to get the snapshot and analyze it.
+- Snapshots can be stored in variables with the browser_snapshot_and_save tool. Use the retrieve_variable tool to get the snapshot and analyze it.
 - Use the snapshot_get_and_filter tool to filter a stored snapshot to find specific elements. This should be preferred as reading the full snapshot by the model is slow and expensive.
 - When using browser_evaluate, save the code in REPRO.
 

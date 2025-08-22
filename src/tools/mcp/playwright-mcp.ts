@@ -68,7 +68,7 @@ export class PlaywrightMCP {
   }
 
   callTool(name: string, args: Record<string, unknown>) {
-    if (name === "snapshotAndSave") {
+    if (name === "browser_snapshot_and_save") {
       return this.snapshotAndSaveTool.execute!(args as { variable: string }, {
         messages: [],
         toolCallId: crypto.randomUUID(),

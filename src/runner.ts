@@ -4,7 +4,7 @@ import { PlaywrightMCP } from "./tools/mcp/playwright-mcp.ts";
 import { printModelResult } from "./utils.ts";
 import { logger } from "./log.ts";
 import { userInputTool } from "./tools/user-input.ts";
-import { resetVariables, retrieveVariableTool, storeVariableTool } from "./tools/variable.ts";
+import { listVariablesTool, resetVariables, retrieveVariableTool, storeVariableTool } from "./tools/variable.ts";
 import { snapshotGetAndFilterTool } from "./tools/snapshot-get-and-filter.ts";
 import { cyan as _cyan, gray as _gray, green as _green, red as _red, yellow as _yellow } from "@std/fmt/colors";
 import { input, select } from "./cli_prompts.ts";
@@ -24,6 +24,7 @@ export class WorkflowRunner {
       user_input: userInputTool,
       store_variable: storeVariableTool,
       retrieve_variable: retrieveVariableTool,
+      list_variables: listVariablesTool,
       snapshot_get_and_filter: snapshotGetAndFilterTool,
     };
     logger.info("Runner", `Exposed tools: ${Object.keys(allTools).join(", ") || "<none>"}`);
@@ -59,7 +60,7 @@ Rules:
 - Use browser_evaluate to run JavaScript code in the context of the page. This can be used for finding elements and extracting information. Do not use it for actions that can be performed with other tools.
 - For clicking text like 'leading article heading', snapshot and analyze to find the best locator, then click that element.
 - Use the store_variable tool to store the result of your actions in a variable when needed to use in a later step.
-- Snapshots can be stored in variables with the snapshotAndSave tool. Use the retrieve_variable tool to get the snapshot and analyze it.
+- Snapshots can be stored in variables with the browser_snapshot_and_save tool. Use the retrieve_variable tool to get the snapshot and analyze it.
 - Use the snapshot_get_and_filter tool to filter a stored snapshot to find specific elements. This should be preferred as reading the full snapshot by the model is slow and expensive.
 - When finished, output a single line starting with 'DONE'. Only output 'DONE' if the step is fully completed. Otherwise, if there was an error, output 'ERROR' and explain the error.
 
