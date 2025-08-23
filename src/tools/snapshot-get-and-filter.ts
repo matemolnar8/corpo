@@ -12,7 +12,7 @@ type TextMatch =
 type AccessibilityNode = {
   role: string;
   text?: string;
-  attributes: Record<string, string | number | boolean>;
+  attributes: Record<string, string>;
   children: AccessibilityNode[];
   rawDescriptor: string;
 };
@@ -20,9 +20,9 @@ type AccessibilityNode = {
 function parseDescriptor(descriptor: string): {
   role: string;
   text?: string;
-  attributes: Record<string, string | number | boolean>;
+  attributes: Record<string, string>;
 } {
-  const attributes: Record<string, string | number | boolean> = {};
+  const attributes: Record<string, string> = {};
 
   const roleMatch = descriptor.match(/^(\w+)/);
   const role = roleMatch ? roleMatch[1] : "generic";
@@ -38,13 +38,12 @@ function parseDescriptor(descriptor: string): {
     const eqIndex = part.indexOf("=");
     if (eqIndex === -1) {
       // flag attribute like [checked]
-      attributes[part.trim()] = true;
+      attributes[part.trim()] = "true";
     } else {
       const key = part.slice(0, eqIndex).trim();
       const rawVal = part.slice(eqIndex + 1).trim();
-      const numVal = Number(rawVal);
-      const val = Number.isNaN(numVal) ? rawVal : numVal;
-      attributes[key] = val;
+      const val = rawVal;
+      attributes[key] = val.toString();
     }
   }
 
@@ -110,23 +109,23 @@ function buildNodes(input: unknown): AccessibilityNode[] {
 function textMatches(candidate: string | undefined, matcher?: TextMatch): boolean {
   if (!matcher) return true;
   if (candidate == null) return false;
-  if ("equals" in matcher) return candidate === matcher.equals;
-  if ("contains" in matcher) return candidate.toLowerCase().includes(matcher.contains.toLowerCase());
+  if ("equals" in matcher) return candidate.toLowerCase().trim() === matcher.equals.toLowerCase().trim();
+  if ("contains" in matcher) return candidate.toLowerCase().trim().includes(matcher.contains.toLowerCase().trim());
   if ("regex" in matcher) {
     const re = new RegExp(matcher.regex, matcher.flags);
-    return re.test(candidate);
+    return re.test(candidate.toLowerCase().trim());
   }
   return false;
 }
 
 function attributesMatch(
-  candidate: Record<string, string | number | boolean>,
-  required?: Record<string, string | number | boolean>,
+  candidate: Record<string, string>,
+  required?: Record<string, string>,
 ): boolean {
   if (!required) return true;
   for (const [k, v] of Object.entries(required)) {
     if (!(k in candidate)) return false;
-    if (candidate[k] !== v) return false;
+    if (candidate[k].toLowerCase().trim() !== v.toLowerCase().trim()) return false;
   }
   return true;
 }
@@ -136,7 +135,7 @@ function findMatches(
   filter: {
     role?: string | string[];
     text?: TextMatch;
-    attributes?: Record<string, string | number | boolean>;
+    attributes?: Record<string, string>;
     includeSubtree: boolean;
     mode: "first" | "all";
     maxResults?: number;
@@ -205,7 +204,7 @@ export const snapshotGetAndFilterInputSchema = z.object({
           "Filter by accessible name/text using equals, contains, or regex.",
         ),
       attributes: z
-        .record(z.string(), z.union([z.string(), z.number(), z.boolean()]))
+        .record(z.string(), z.string())
         .optional()
         .describe("Match descriptor attributes like level=4, cursor=pointer"),
     })

@@ -8,7 +8,7 @@ snapshot[`snapshot get and filter extracts heading and link from applitools snap
     "role": "heading",
     "text": "Login Form",
     "attributes": {
-      "level": 4,
+      "level": "4",
       "ref": "e6"
     },
     "children": [],
