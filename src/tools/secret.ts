@@ -2,7 +2,6 @@ import { logger, stringifySmall } from "../log.ts";
 import { tool } from "ai";
 import z from "zod";
 
-// In-memory secret storage. Never expose values to the LLM.
 const secrets = new Map<string, string>();
 
 export function resetSecrets(): void {
@@ -48,10 +47,8 @@ async function loadJsonFileIfExists(path: string): Promise<Record<string, string
 }
 
 export async function loadSecrets(): Promise<void> {
-  // 1) Reset current map
   resetSecrets();
 
-  // 2) Project local secrets.json
   const fromProject = await loadJsonFileIfExists("secrets.json");
   if (fromProject) {
     for (const [k, v] of Object.entries(fromProject)) setSecret(k, v);
@@ -64,13 +61,21 @@ export async function loadSecrets(): Promise<void> {
 // Replace placeholders like: {{secret.NAME}}
 const SECRET_PLACEHOLDER = /\{\{\s*secret\.([A-Za-z0-9_-]+)\s*\}\}/g;
 
-export function replaceSecretsInArgs<T>(value: T): T {
+// Replace any occurrences of secret values in an arbitrary value (objects, arrays, strings)
+// with their corresponding placeholders (e.g., actual value -> {{secret.NAME}}).
+// Also tracks which secrets were used while replacing placeholders in args.
+export function replaceSecretsInArgsWithTracking<T>(value: T): { value: T; usedSecretNames: string[] } {
+  const used = new Set<string>();
+
   const visit = (v: unknown): unknown => {
     if (typeof v === "string") {
       const missing: string[] = [];
       const replaced = v.replace(SECRET_PLACEHOLDER, (_m, p1: string) => {
         const s = getSecret(p1);
-        if (typeof s === "string") return s;
+        if (typeof s === "string") {
+          used.add(p1);
+          return s;
+        }
         missing.push(p1);
         return _m; // keep placeholder for now
       });
@@ -78,6 +83,39 @@ export function replaceSecretsInArgs<T>(value: T): T {
         throw new Error(`Missing secret(s): ${missing.join(", ")}`);
       }
       return replaced;
+    }
+    if (Array.isArray(v)) return v.map(visit);
+    if (v && typeof v === "object") {
+      const out: Record<string, unknown> = {};
+      for (const [k, vv] of Object.entries(v)) out[k] = visit(vv);
+      return out;
+    }
+    return v;
+  };
+
+  const replacedValue = visit(value) as T;
+  return { value: replacedValue, usedSecretNames: Array.from(used) };
+}
+
+// Replace only the provided secret names in the result structure with their placeholders.
+export function replaceSecretsInResultAllowed<T>(value: T, allowedSecretNames: ReadonlyArray<string>): T {
+  const escapeRegExp = (input: string): string => input.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  const allowedSet = new Set(allowedSecretNames);
+
+  const replacements = Array.from(secrets.entries())
+    .filter(([name, val]) => allowedSet.has(name) && typeof val === "string" && val.length > 0)
+    .map(([name, val]) => ({ name, value: val as string, placeholder: `{{secret.${name}}}` }))
+    .sort((a, b) => b.value.length - a.value.length);
+
+  const visit = (v: unknown): unknown => {
+    if (typeof v === "string") {
+      let out = v;
+      for (const rep of replacements) {
+        const pattern = new RegExp(escapeRegExp(rep.value), "g");
+        out = out.replace(pattern, rep.placeholder);
+      }
+      return out;
     }
     if (Array.isArray(v)) return v.map(visit);
     if (v && typeof v === "object") {

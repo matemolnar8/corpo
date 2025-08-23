@@ -1,0 +1,23 @@
+---
+alwaysApply: true
+globs: *.ts,*.tsx
+description: Always run type check and tests after TypeScript changes using project tasks
+---
+
+# TypeScript changes require type-check and tests
+
+Whenever you make a substantive edit to TypeScript files, do both of the following:
+
+- Type-check the project quickly without executing tests:
+
+```bash
+deno check
+```
+
+- Run the full test suite:
+
+```bash
+deno task test
+```
+
+Project tasks are defined in [deno.json](mdc:deno.json). Use the run terminal command tool to execute these commands non-interactively.

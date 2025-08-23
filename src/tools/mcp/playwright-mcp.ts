@@ -5,7 +5,7 @@ import { jsonSchema } from "@ai-sdk/provider-utils";
 import { logger, stringifySmall } from "../../log.ts";
 import type { ImageContent, TextContent } from "@modelcontextprotocol/sdk/types.js";
 import { setVariable } from "../variable.ts";
-import { replaceSecretsInArgs } from "../secret.ts";
+import { replaceSecretsInArgsWithTracking, replaceSecretsInResultAllowed } from "../secret.ts";
 import { deferPromise } from "../../utils.ts";
 
 const PLAYWRIGHT_MCP = {
@@ -69,6 +69,7 @@ export class PlaywrightMCP {
     return this.filterAllowedTools(all);
   }
 
+  // Yay single threading!
   private previousToolPromise?: Promise<void>;
 
   async callTool(
@@ -114,11 +115,12 @@ export class PlaywrightMCP {
     // Log placeholders but not resolved secret values
     logger.debug("MCP", `Tool '${name}' args: ${stringifySmall(args)}`);
     try {
-      const safeArgs = replaceSecretsInArgs(args);
+      const { value: safeArgs, usedSecretNames } = replaceSecretsInArgsWithTracking(args);
       const result = await (client.callTool(name, safeArgs) as Promise<PlaywrightToolOutput>);
       const filtered = options.includeSnapshot ? result : this.removeSnapshots(result);
-      logger.debug("MCP", `Tool '${name}' result: ${stringifySmall(filtered)}`);
-      return filtered;
+      const masked = replaceSecretsInResultAllowed(filtered, usedSecretNames);
+      logger.debug("MCP", `Tool '${name}' result: ${stringifySmall(masked)}`);
+      return masked;
     } catch (err) {
       logger.error("MCP", `Tool '${name}' errored: ${String(err)}`);
       throw err;
