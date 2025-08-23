@@ -76,12 +76,16 @@ export class PlaywrightMCP {
     args: Record<string, unknown>,
     options: { includeSnapshot?: boolean } = {},
   ) {
+    // Wait for previous tool to complete
     if (this.previousToolPromise) {
+      logger.debug("MCP", "Waiting for previous tool to complete");
       await this.previousToolPromise;
     }
-
     const previousToolDeferred = deferPromise<void>();
     this.previousToolPromise = previousToolDeferred.promise;
+
+    // Workaround for race condition in Playwright MCP
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     if (name === "browser_snapshot_and_save") {
       return this.snapshotAndSaveTool.execute!(args as { variable: string }, {
