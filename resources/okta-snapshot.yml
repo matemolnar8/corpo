@@ -1,349 +1,349 @@
 - button
 - link "Genesys logo":
-  - /url: http://www.genesys.com/
-  - img "Genesys logo"
+    - /url: http://www.genesys.com/
+    - img "Genesys logo"
 - button
 - banner:
-  - search:
-    - text: Search your apps, tab to navigate between search results
-    - paragraph: Optional
-    - searchbox "Search your apps, tab to navigate between search results Optional"
+    - search:
+        - text: Search your apps, tab to navigate between search results
+        - paragraph: Optional
+        - searchbox "Search your apps, tab to navigate between search results Optional"
 - main:
-  - heading "My Apps" [level=1]
-  - button "Sort"
-  - region "Used":
-    - button "Collapse Used section":
-      - img
-      - text: Used
-    - button "Rename Used":
-      - img
+    - heading "My Apps" [level=1]
+    - button "Sort"
     - region "Used":
-      - link "launch app Cloudbooking":
-        - /url: https://genesys.okta.com/home/genesys_cloudbooking_1/0oa1mo2njalwLfkq70h8/aln1mo2ub3rfu8Pay0h8
-        - article:
-          - img "Cloudbooking logo"
-          - text: Cloudbooking
-      - button "Settings for Cloudbooking":
-        - img
-      - link "launch app Workday":
-        - /url: https://genesys.okta.com/home/workday/0oa1r6g2riq0tm4OU0h8/30
-        - article:
-          - img "Workday logo"
-          - text: Workday
-      - button "Settings for Workday":
-        - img
-      - link "launch app Microsoft Office 365 Office Portal":
-        - /url: https://genesys.okta.com/home/office365/0oa11x41m3tKbViul0i8/2161
-        - article:
-          - img "Microsoft Office 365 Office Portal logo"
-          - text: Microsoft Office 365 Office Portal
-      - button "Settings for Microsoft Office 365 Office Portal":
-        - img
-      - link "launch app Genesys Cloud":
-        - /url: https://genesys.okta.com/home/genesys_purecloud_3/0oa1bxjxn89LcxmJH0h8/aln1bxkuje28UMaXF0h8
-        - article:
-          - img "Genesys Cloud logo"
-          - text: Genesys Cloud
-      - button "Settings for Genesys Cloud":
-        - img
-      - link "launch app Mimecast Portal v3":
-        - /url: https://genesys.okta.com/home/mimecastppv3/0oa1bo3twtudWxt6W0h8/aln18wcl7lvlDdVUo1d8
-        - article:
-          - img "Mimecast Portal v3 logo"
-          - text: Mimecast Portal v3
-      - button "Settings for Mimecast Portal v3":
-        - img
-      - link "launch app Benevity":
-        - /url: https://genesys.okta.com/home/genesys_benevity_1/0oa1juba7mntoRYXA0h8/aln1jubequeufPtxg0h8
-        - article:
-          - img "Benevity logo"
-          - text: Benevity
-      - button "Settings for Benevity":
-        - img
-      - link "launch app Figma":
-        - /url: https://genesys.okta.com/home/figma/0oa1kx2rsmmYrjQXh0h8/aln1eiv3tgpcmipS21d8
-        - article:
-          - img "Figma logo"
-          - text: Figma
-      - button "Settings for Figma":
-        - img
-      - link "launch app Miro":
-        - /url: https://genesys.okta.com/home/realtime_board/0oa1iy2wyxbj7UQJ50h8/24467
-        - article:
-          - img "Miro logo"
-          - text: Miro
-      - button "Settings for Miro":
-        - img
-      - link "launch app Zoom":
-        - /url: https://genesys.okta.com/home/zoomus/0oa1fj4b2x050eDFv0h8/1835
-        - article:
-          - img "Zoom logo"
-          - text: Zoom
-      - button "Settings for Zoom":
-        - img
-      - link "launch app Video Hub":
-        - /url: https://genesys.okta.com/home/genesys_kaltura_1/0oa1swy6g8yk0tar00h8/aln1swyccdlg6JClZ0h8
-        - article:
-          - img "Video Hub logo"
-          - text: Video Hub
-      - button "Settings for Video Hub":
-        - img
-      - link "launch app Confluence Atlassian Cloud":
-        - /url: https://genesys.okta.com/home/bookmark/0oa1uu6y4oygHu6ok0h8/2557
-        - article:
-          - img "Confluence Atlassian Cloud logo"
-          - text: Confluence Atlassian Cloud
-      - button "Settings for Confluence Atlassian Cloud":
-        - img
-      - link "launch app One Genesys Portal":
-        - /url: https://genesys.okta.com/home/genesys_portal_1/0oa2158xnuiK4DnUd0h8/aln21590o29I3YAD10h8
-        - article:
-          - img "One Genesys Portal logo"
-          - text: One Genesys Portal
-      - button "Settings for One Genesys Portal":
-        - img
-      - link "launch app Bravo (Recognition)":
-        - /url: https://genesys.okta.com/home/genesys_achievers_1/0oa1zqbw68zyMwf380h8/aln1zqc0su0BEejqe0h8
-        - article:
-          - img "Bravo (Recognition) logo"
-          - text: Bravo (Recognition)
-      - button "Settings for Bravo (Recognition)":
-        - img
-  - region "Work":
-    - button "Collapse Work section":
-      - img
-      - text: Work
-    - button "Rename Work":
-      - img
+        - button "Collapse Used section":
+            - img
+            - text: Used
+        - button "Rename Used":
+            - img
+        - region "Used":
+            - link "launch app Cloudbooking":
+                - /url: https://genesys.okta.com/home/genesys_cloudbooking_1/0oa1mo2njalwLfkq70h8/aln1mo2ub3rfu8Pay0h8
+                - article:
+                    - img "Cloudbooking logo"
+                    - text: Cloudbooking
+            - button "Settings for Cloudbooking":
+                - img
+            - link "launch app Workday":
+                - /url: https://genesys.okta.com/home/workday/0oa1r6g2riq0tm4OU0h8/30
+                - article:
+                    - img "Workday logo"
+                    - text: Workday
+            - button "Settings for Workday":
+                - img
+            - link "launch app Microsoft Office 365 Office Portal":
+                - /url: https://genesys.okta.com/home/office365/0oa11x41m3tKbViul0i8/2161
+                - article:
+                    - img "Microsoft Office 365 Office Portal logo"
+                    - text: Microsoft Office 365 Office Portal
+            - button "Settings for Microsoft Office 365 Office Portal":
+                - img
+            - link "launch app Genesys Cloud":
+                - /url: https://genesys.okta.com/home/genesys_purecloud_3/0oa1bxjxn89LcxmJH0h8/aln1bxkuje28UMaXF0h8
+                - article:
+                    - img "Genesys Cloud logo"
+                    - text: Genesys Cloud
+            - button "Settings for Genesys Cloud":
+                - img
+            - link "launch app Mimecast Portal v3":
+                - /url: https://genesys.okta.com/home/mimecastppv3/0oa1bo3twtudWxt6W0h8/aln18wcl7lvlDdVUo1d8
+                - article:
+                    - img "Mimecast Portal v3 logo"
+                    - text: Mimecast Portal v3
+            - button "Settings for Mimecast Portal v3":
+                - img
+            - link "launch app Benevity":
+                - /url: https://genesys.okta.com/home/genesys_benevity_1/0oa1juba7mntoRYXA0h8/aln1jubequeufPtxg0h8
+                - article:
+                    - img "Benevity logo"
+                    - text: Benevity
+            - button "Settings for Benevity":
+                - img
+            - link "launch app Figma":
+                - /url: https://genesys.okta.com/home/figma/0oa1kx2rsmmYrjQXh0h8/aln1eiv3tgpcmipS21d8
+                - article:
+                    - img "Figma logo"
+                    - text: Figma
+            - button "Settings for Figma":
+                - img
+            - link "launch app Miro":
+                - /url: https://genesys.okta.com/home/realtime_board/0oa1iy2wyxbj7UQJ50h8/24467
+                - article:
+                    - img "Miro logo"
+                    - text: Miro
+            - button "Settings for Miro":
+                - img
+            - link "launch app Zoom":
+                - /url: https://genesys.okta.com/home/zoomus/0oa1fj4b2x050eDFv0h8/1835
+                - article:
+                    - img "Zoom logo"
+                    - text: Zoom
+            - button "Settings for Zoom":
+                - img
+            - link "launch app Video Hub":
+                - /url: https://genesys.okta.com/home/genesys_kaltura_1/0oa1swy6g8yk0tar00h8/aln1swyccdlg6JClZ0h8
+                - article:
+                    - img "Video Hub logo"
+                    - text: Video Hub
+            - button "Settings for Video Hub":
+                - img
+            - link "launch app Confluence Atlassian Cloud":
+                - /url: https://genesys.okta.com/home/bookmark/0oa1uu6y4oygHu6ok0h8/2557
+                - article:
+                    - img "Confluence Atlassian Cloud logo"
+                    - text: Confluence Atlassian Cloud
+            - button "Settings for Confluence Atlassian Cloud":
+                - img
+            - link "launch app One Genesys Portal":
+                - /url: https://genesys.okta.com/home/genesys_portal_1/0oa2158xnuiK4DnUd0h8/aln21590o29I3YAD10h8
+                - article:
+                    - img "One Genesys Portal logo"
+                    - text: One Genesys Portal
+            - button "Settings for One Genesys Portal":
+                - img
+            - link "launch app Bravo (Recognition)":
+                - /url: https://genesys.okta.com/home/genesys_achievers_1/0oa1zqbw68zyMwf380h8/aln1zqc0su0BEejqe0h8
+                - article:
+                    - img "Bravo (Recognition) logo"
+                    - text: Bravo (Recognition)
+            - button "Settings for Bravo (Recognition)":
+                - img
     - region "Work":
-      - link "launch app GS Calculator":
-        - /url: https://genesys.okta.com/home/genesys_gscalculator_1/0oa1cnjk39z0ghltH0h8/aln1cnk53b2FaEtVa0h8
-        - article:
-          - img "GS Calculator logo"
-          - text: GS Calculator
-      - button "Settings for GS Calculator":
+        - button "Collapse Work section":
+            - img
+            - text: Work
+        - button "Rename Work":
+            - img
+        - region "Work":
+            - link "launch app GS Calculator":
+                - /url: https://genesys.okta.com/home/genesys_gscalculator_1/0oa1cnjk39z0ghltH0h8/aln1cnk53b2FaEtVa0h8
+                - article:
+                    - img "GS Calculator logo"
+                    - text: GS Calculator
+            - button "Settings for GS Calculator":
+                - img
+            - link "launch app Amplify":
+                - /url: https://genesys.okta.com/home/bambu_sproutsocial/0oa1k32pwc04sZr2f0h8/aln1cd9shtoc2G6sf0h8
+                - article:
+                    - img "Amplify logo"
+                    - text: Amplify
+            - button "Settings for Amplify":
+                - img
+            - link "launch app Concur":
+                - /url: https://genesys.okta.com/home/genesys_concurnew_1/0oa1iwa6z6zahRaSq0h8/aln1iwag7yzfXloV50h8
+                - article:
+                    - img "Concur logo"
+                    - text: Concur
+            - button "Settings for Concur":
+                - img
+            - link "launch app Chatter":
+                - /url: https://genesys.okta.com/home/bookmark/0oa1b5nu56swVTkWL0h8/2557
+                - article:
+                    - img "Chatter logo"
+                    - text: Chatter
+            - button "Settings for Chatter":
+                - img
+            - link "launch app ServiceNow - Cloud Services":
+                - /url: https://genesys.okta.com/home/servicenow_ud/0oa1h999diqb5HQp60h8/aln1camhpt2NAQZI30g8
+                - article:
+                    - img "ServiceNow - Cloud Services logo"
+                    - text: ServiceNow - Cloud Services
+            - button "Settings for ServiceNow - Cloud Services":
+                - img
+            - link "launch app Inclusion for All":
+                - /url: https://genesys.okta.com/home/bookmark/0oa1ji0bi16f4cXUt0h8/2557
+                - article:
+                    - img "Inclusion for All logo"
+                    - text: Inclusion for All
+            - button "Settings for Inclusion for All":
+                - img
+            - link "launch app Genesys Community":
+                - /url: https://genesys.okta.com/home/genesys_higherlogic_1/0oa1fcjkflc1mZbLw0h8/aln1fcjqhxySGvkIT0h8
+                - article:
+                    - img "Genesys Community logo"
+                    - text: Genesys Community
+            - button "Settings for Genesys Community":
+                - img
+            - link "launch app Genesys Information Experience":
+                - /url: https://genesys.okta.com/home/bookmark/0oa1k3xbzf2zwpHVE0h8/2557
+                - article:
+                    - img "Genesys Information Experience logo"
+                    - text: Genesys Information Experience
+            - button "Settings for Genesys Information Experience":
+                - img
+            - link "launch app RFPIO":
+                - /url: https://genesys.okta.com/home/rfpio/0oa1i54sfnjR42OZ60h8/aln1a3nenl6E781al1d8
+                - article:
+                    - img "RFPIO logo"
+                    - text: RFPIO
+            - button "Settings for RFPIO":
+                - img
+            - link "launch app Shop Genesys":
+                - /url: https://genesys.okta.com/home/bookmark/0oa1ji09i5jOhOq9f0h8/2557
+                - article:
+                    - img "Shop Genesys logo"
+                    - text: Shop Genesys
+            - button "Settings for Shop Genesys":
+                - img
+            - link "launch app Smartsheet":
+                - /url: https://genesys.okta.com/home/smartsheet/0oa182mz1o62w2LiM0h8/194
+                - article:
+                    - img "Smartsheet logo"
+                    - text: Smartsheet
+            - button "Settings for Smartsheet":
+                - img
+            - link "launch app GitHub Enterprise":
+                - /url: https://genesys.okta.com/home/github_enterprise/0oa1gog6dfrICjOMf0h8/35113
+                - article:
+                    - img "GitHub Enterprise logo"
+                    - text: GitHub Enterprise
+            - button "Settings for GitHub Enterprise":
+                - img
+            - link "launch app Fidelity":
+                - /url: https://genesys.okta.com/home/genesys_fidelity_1/0oa1oalrvyzOliJhA0h8/aln1oaluy7lyIzz120h8
+                - article:
+                    - img "Fidelity logo"
+                    - text: Fidelity
+            - button "Settings for Fidelity":
+                - img
+            - link "launch app Tableau Online - OneGenesys":
+                - /url: https://genesys.okta.com/home/tableauonline/0oa1qxnc1xcAjiCjM0h8/53311
+                - article:
+                    - img "Tableau Online - OneGenesys logo"
+                    - text: Tableau Online - OneGenesys
+            - button "Settings for Tableau Online - OneGenesys":
+                - img
+            - link "launch app Yeti CMS":
+                - /url: https://genesys.okta.com/home/oidc_client/0oa1t873c1ttwTNAz0h8/aln191agwp5daiSMu0g8
+                - article:
+                    - img "Yeti CMS logo"
+                    - text: Yeti CMS
+            - button "Settings for Yeti CMS":
+                - img
+            - link "launch app Dovetail":
+                - /url: https://genesys.okta.com/home/dovetail/0oa1tz1xz9rmYLEZj0h8/aln59bsi55VPpsRoo0x7
+                - article:
+                    - img "Dovetail logo"
+                    - text: Dovetail
+            - button "Settings for Dovetail":
+                - img
+            - link "launch app Engage Portal (requires VPN)":
+                - /url: https://genesys.okta.com/home/genesys_geensysengage_1/0oa1u6n2gpw7oB2yL0h8/aln1u6n6ro16tHIPg0h8
+                - article:
+                    - img "Engage Portal (requires VPN) logo"
+                    - text: Engage Portal (requires VPN)
+            - button "Settings for Engage Portal (requires VPN)":
+                - img
+            - link "launch app LucidChart":
+                - /url: https://genesys.okta.com/home/bookmark/0oa1nxeg73wYlCSui0h8/2557
+                - article:
+                    - img "LucidChart logo"
+                    - text: LucidChart
+            - button "Settings for LucidChart":
+                - img
+            - link "launch app Beyond Training":
+                - /url: https://genesys.okta.com/home/bookmark/0oa1vehz2d87Q5HCS0h8/2557
+                - article:
+                    - img "Beyond Training logo"
+                    - text: Beyond Training
+            - button "Settings for Beyond Training":
+                - img
+            - link "launch app BetterUp":
+                - /url: https://genesys.okta.com/home/genesys_betterup_1/0oa1w824jo0rzsZYW0h8/aln1w829qts5d6LlE0h8
+                - article:
+                    - img "BetterUp logo"
+                    - text: BetterUp
+            - button "Settings for BetterUp":
+                - img
+            - link "launch app Bynder":
+                - /url: https://genesys.okta.com/home/genesys_bynder_1/0oa1k2x56thkukt280h8/aln1k2x8cnyDhoW3B0h8
+                - article:
+                    - img "Bynder logo"
+                    - text: Bynder
+            - button "Settings for Bynder":
+                - img
+            - link "launch app Global Services Portal":
+                - /url: https://genesys.okta.com/home/servicenow_ud/0oa20wi2yhu26kV6R0h8/aln1camhpt2NAQZI30g8
+                - article:
+                    - img "Global Services Portal logo"
+                    - text: Global Services Portal
+            - button "Settings for Global Services Portal":
+                - img
+            - link "launch app Time Tracking":
+                - /url: https://genesys.okta.com/home/oidc_client/0oa1q0we1a0scZagW0h8/aln191agwp5daiSMu0g8
+                - article:
+                    - img "Time Tracking logo"
+                    - text: Time Tracking
+            - button "Settings for Time Tracking":
+                - img
+            - link "launch app Anaqua":
+                - /url: https://genesys.okta.com/home/genesys_anaqua_1/0oa1qe0upqnBnXaZf0h8/aln1qe1aonjh8FkTK0h8
+                - article:
+                    - img "Anaqua logo"
+                    - text: Anaqua
+            - button "Settings for Anaqua":
+                - img
+            - link "launch app Knowledge Network":
+                - /url: https://genesys.okta.com/home/bookmark/0oa1pxi80twBETfi80h8/2557
+                - article:
+                    - img "Knowledge Network logo"
+                    - text: Knowledge Network
+            - button "Settings for Knowledge Network":
+                - img
+            - link "launch app Aha! Genesys":
+                - /url: https://genesys.okta.com/home/ahasaml/0oa1f2vz6ejYbV9NW0h8/52299
+                - article:
+                    - img "Aha! Genesys logo"
+                    - text: Aha! Genesys
+            - button "Settings for Aha! Genesys":
+                - img
+            - link "launch app Aha! Genesys Cloud":
+                - /url: https://genesys.okta.com/home/ahasaml/0oa1mnc10ruJFEBao0h8/52299
+                - article:
+                    - img "Aha! Genesys Cloud logo"
+                    - text: Aha! Genesys Cloud
+            - button "Settings for Aha! Genesys Cloud":
+                - img
+            - link "launch app G-Cast":
+                - /url: https://genesys.okta.com/home/bookmark/0oa1g9nnb1tOMUMbr0h8/2557
+                - article:
+                    - img "G-Cast logo"
+                    - text: G-Cast
+            - button "Settings for G-Cast":
+                - img
+            - link "launch app Customer Value Platform":
+                - /url: https://genesys.okta.com/home/bookmark/0oa1rm66vz3lxMgtg0h8/2557
+                - article:
+                    - img "Customer Value Platform logo"
+                    - text: Customer Value Platform
+            - button "Settings for Customer Value Platform":
+                - img
+            - link "launch app Briefing Source":
+                - /url: https://genesys.okta.com/home/genesys_briefingsource_3/0oa21hpxczmNWlYii0h8/aln21hq0zsyG4mhsV0h8
+                - article:
+                    - img "Briefing Source logo"
+                    - text: Briefing Source
+            - button "Settings for Briefing Source":
+                - img
+            - link "launch app Cvent":
+                - /url: https://genesys.okta.com/home/genesys_cvent_1/0oa22dgxcz0lGVyRw0h8/aln22dh1t78vWmSMG0h8
+                - article:
+                    - img "Cvent logo"
+                    - text: Cvent
+            - button "Settings for Cvent":
+                - img
+            - link "launch app AWS Skill Builder":
+                - /url: https://genesys.okta.com/home/bookmark/0oa22nqw0rkwHGIk20h8/2557
+                - article:
+                    - img "AWS Skill Builder logo"
+                    - text: AWS Skill Builder
+            - button "Settings for AWS Skill Builder":
+                - img
+    - button "Add section":
         - img
-      - link "launch app Amplify":
-        - /url: https://genesys.okta.com/home/bambu_sproutsocial/0oa1k32pwc04sZr2f0h8/aln1cd9shtoc2G6sf0h8
-        - article:
-          - img "Amplify logo"
-          - text: Amplify
-      - button "Settings for Amplify":
-        - img
-      - link "launch app Concur":
-        - /url: https://genesys.okta.com/home/genesys_concurnew_1/0oa1iwa6z6zahRaSq0h8/aln1iwag7yzfXloV50h8
-        - article:
-          - img "Concur logo"
-          - text: Concur
-      - button "Settings for Concur":
-        - img
-      - link "launch app Chatter":
-        - /url: https://genesys.okta.com/home/bookmark/0oa1b5nu56swVTkWL0h8/2557
-        - article:
-          - img "Chatter logo"
-          - text: Chatter
-      - button "Settings for Chatter":
-        - img
-      - link "launch app ServiceNow - Cloud Services":
-        - /url: https://genesys.okta.com/home/servicenow_ud/0oa1h999diqb5HQp60h8/aln1camhpt2NAQZI30g8
-        - article:
-          - img "ServiceNow - Cloud Services logo"
-          - text: ServiceNow - Cloud Services
-      - button "Settings for ServiceNow - Cloud Services":
-        - img
-      - link "launch app Inclusion for All":
-        - /url: https://genesys.okta.com/home/bookmark/0oa1ji0bi16f4cXUt0h8/2557
-        - article:
-          - img "Inclusion for All logo"
-          - text: Inclusion for All
-      - button "Settings for Inclusion for All":
-        - img
-      - link "launch app Genesys Community":
-        - /url: https://genesys.okta.com/home/genesys_higherlogic_1/0oa1fcjkflc1mZbLw0h8/aln1fcjqhxySGvkIT0h8
-        - article:
-          - img "Genesys Community logo"
-          - text: Genesys Community
-      - button "Settings for Genesys Community":
-        - img
-      - link "launch app Genesys Information Experience":
-        - /url: https://genesys.okta.com/home/bookmark/0oa1k3xbzf2zwpHVE0h8/2557
-        - article:
-          - img "Genesys Information Experience logo"
-          - text: Genesys Information Experience
-      - button "Settings for Genesys Information Experience":
-        - img
-      - link "launch app RFPIO":
-        - /url: https://genesys.okta.com/home/rfpio/0oa1i54sfnjR42OZ60h8/aln1a3nenl6E781al1d8
-        - article:
-          - img "RFPIO logo"
-          - text: RFPIO
-      - button "Settings for RFPIO":
-        - img
-      - link "launch app Shop Genesys":
-        - /url: https://genesys.okta.com/home/bookmark/0oa1ji09i5jOhOq9f0h8/2557
-        - article:
-          - img "Shop Genesys logo"
-          - text: Shop Genesys
-      - button "Settings for Shop Genesys":
-        - img
-      - link "launch app Smartsheet":
-        - /url: https://genesys.okta.com/home/smartsheet/0oa182mz1o62w2LiM0h8/194
-        - article:
-          - img "Smartsheet logo"
-          - text: Smartsheet
-      - button "Settings for Smartsheet":
-        - img
-      - link "launch app GitHub Enterprise":
-        - /url: https://genesys.okta.com/home/github_enterprise/0oa1gog6dfrICjOMf0h8/35113
-        - article:
-          - img "GitHub Enterprise logo"
-          - text: GitHub Enterprise
-      - button "Settings for GitHub Enterprise":
-        - img
-      - link "launch app Fidelity":
-        - /url: https://genesys.okta.com/home/genesys_fidelity_1/0oa1oalrvyzOliJhA0h8/aln1oaluy7lyIzz120h8
-        - article:
-          - img "Fidelity logo"
-          - text: Fidelity
-      - button "Settings for Fidelity":
-        - img
-      - link "launch app Tableau Online - OneGenesys":
-        - /url: https://genesys.okta.com/home/tableauonline/0oa1qxnc1xcAjiCjM0h8/53311
-        - article:
-          - img "Tableau Online - OneGenesys logo"
-          - text: Tableau Online - OneGenesys
-      - button "Settings for Tableau Online - OneGenesys":
-        - img
-      - link "launch app Yeti CMS":
-        - /url: https://genesys.okta.com/home/oidc_client/0oa1t873c1ttwTNAz0h8/aln191agwp5daiSMu0g8
-        - article:
-          - img "Yeti CMS logo"
-          - text: Yeti CMS
-      - button "Settings for Yeti CMS":
-        - img
-      - link "launch app Dovetail":
-        - /url: https://genesys.okta.com/home/dovetail/0oa1tz1xz9rmYLEZj0h8/aln59bsi55VPpsRoo0x7
-        - article:
-          - img "Dovetail logo"
-          - text: Dovetail
-      - button "Settings for Dovetail":
-        - img
-      - link "launch app Engage Portal (requires VPN)":
-        - /url: https://genesys.okta.com/home/genesys_geensysengage_1/0oa1u6n2gpw7oB2yL0h8/aln1u6n6ro16tHIPg0h8
-        - article:
-          - img "Engage Portal (requires VPN) logo"
-          - text: Engage Portal (requires VPN)
-      - button "Settings for Engage Portal (requires VPN)":
-        - img
-      - link "launch app LucidChart":
-        - /url: https://genesys.okta.com/home/bookmark/0oa1nxeg73wYlCSui0h8/2557
-        - article:
-          - img "LucidChart logo"
-          - text: LucidChart
-      - button "Settings for LucidChart":
-        - img
-      - link "launch app Beyond Training":
-        - /url: https://genesys.okta.com/home/bookmark/0oa1vehz2d87Q5HCS0h8/2557
-        - article:
-          - img "Beyond Training logo"
-          - text: Beyond Training
-      - button "Settings for Beyond Training":
-        - img
-      - link "launch app BetterUp":
-        - /url: https://genesys.okta.com/home/genesys_betterup_1/0oa1w824jo0rzsZYW0h8/aln1w829qts5d6LlE0h8
-        - article:
-          - img "BetterUp logo"
-          - text: BetterUp
-      - button "Settings for BetterUp":
-        - img
-      - link "launch app Bynder":
-        - /url: https://genesys.okta.com/home/genesys_bynder_1/0oa1k2x56thkukt280h8/aln1k2x8cnyDhoW3B0h8
-        - article:
-          - img "Bynder logo"
-          - text: Bynder
-      - button "Settings for Bynder":
-        - img
-      - link "launch app Global Services Portal":
-        - /url: https://genesys.okta.com/home/servicenow_ud/0oa20wi2yhu26kV6R0h8/aln1camhpt2NAQZI30g8
-        - article:
-          - img "Global Services Portal logo"
-          - text: Global Services Portal
-      - button "Settings for Global Services Portal":
-        - img
-      - link "launch app Time Tracking":
-        - /url: https://genesys.okta.com/home/oidc_client/0oa1q0we1a0scZagW0h8/aln191agwp5daiSMu0g8
-        - article:
-          - img "Time Tracking logo"
-          - text: Time Tracking
-      - button "Settings for Time Tracking":
-        - img
-      - link "launch app Anaqua":
-        - /url: https://genesys.okta.com/home/genesys_anaqua_1/0oa1qe0upqnBnXaZf0h8/aln1qe1aonjh8FkTK0h8
-        - article:
-          - img "Anaqua logo"
-          - text: Anaqua
-      - button "Settings for Anaqua":
-        - img
-      - link "launch app Knowledge Network":
-        - /url: https://genesys.okta.com/home/bookmark/0oa1pxi80twBETfi80h8/2557
-        - article:
-          - img "Knowledge Network logo"
-          - text: Knowledge Network
-      - button "Settings for Knowledge Network":
-        - img
-      - link "launch app Aha! Genesys":
-        - /url: https://genesys.okta.com/home/ahasaml/0oa1f2vz6ejYbV9NW0h8/52299
-        - article:
-          - img "Aha! Genesys logo"
-          - text: Aha! Genesys
-      - button "Settings for Aha! Genesys":
-        - img
-      - link "launch app Aha! Genesys Cloud":
-        - /url: https://genesys.okta.com/home/ahasaml/0oa1mnc10ruJFEBao0h8/52299
-        - article:
-          - img "Aha! Genesys Cloud logo"
-          - text: Aha! Genesys Cloud
-      - button "Settings for Aha! Genesys Cloud":
-        - img
-      - link "launch app G-Cast":
-        - /url: https://genesys.okta.com/home/bookmark/0oa1g9nnb1tOMUMbr0h8/2557
-        - article:
-          - img "G-Cast logo"
-          - text: G-Cast
-      - button "Settings for G-Cast":
-        - img
-      - link "launch app Customer Value Platform":
-        - /url: https://genesys.okta.com/home/bookmark/0oa1rm66vz3lxMgtg0h8/2557
-        - article:
-          - img "Customer Value Platform logo"
-          - text: Customer Value Platform
-      - button "Settings for Customer Value Platform":
-        - img
-      - link "launch app Briefing Source":
-        - /url: https://genesys.okta.com/home/genesys_briefingsource_3/0oa21hpxczmNWlYii0h8/aln21hq0zsyG4mhsV0h8
-        - article:
-          - img "Briefing Source logo"
-          - text: Briefing Source
-      - button "Settings for Briefing Source":
-        - img
-      - link "launch app Cvent":
-        - /url: https://genesys.okta.com/home/genesys_cvent_1/0oa22dgxcz0lGVyRw0h8/aln22dh1t78vWmSMG0h8
-        - article:
-          - img "Cvent logo"
-          - text: Cvent
-      - button "Settings for Cvent":
-        - img
-      - link "launch app AWS Skill Builder":
-        - /url: https://genesys.okta.com/home/bookmark/0oa22nqw0rkwHGIk20h8/2557
-        - article:
-          - img "AWS Skill Builder logo"
-          - text: AWS Skill Builder
-      - button "Settings for AWS Skill Builder":
-        - img
-  - button "Add section":
-    - img
-    - text: Add section
-  - heading "Support" [level=2]
-  - text: "Help:"
-  - link "https://genesyspartner.force.com/customercare/CustomerCareContactUs":
-    - /url: https://genesyspartner.force.com/customercare/CustomerCareContactUs
+        - text: Add section
+    - heading "Support" [level=2]
+    - text: "Help:"
+    - link "https://genesyspartner.force.com/customercare/CustomerCareContactUs":
+        - /url: https://genesyspartner.force.com/customercare/CustomerCareContactUs
