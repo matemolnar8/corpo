@@ -76,13 +76,16 @@ export class PlaywrightMCP {
     args: Record<string, unknown>,
     options: { includeSnapshot?: boolean } = {},
   ) {
-    // Wait for previous tool to complete
-    if (this.previousToolPromise) {
-      logger.debug("MCP", "Waiting for previous tool to complete");
-      await this.previousToolPromise;
-    }
+    const originalPreviousToolPromise = this.previousToolPromise;
     const previousToolDeferred = deferPromise<void>();
     this.previousToolPromise = previousToolDeferred.promise;
+    // Wait for previous tool to complete
+    if (originalPreviousToolPromise) {
+      logger.debug("MCP", "Waiting for previous tool to complete");
+      await originalPreviousToolPromise;
+    } else {
+      logger.debug("MCP", "No previous tool to wait for");
+    }
 
     // Workaround for race condition in Playwright MCP
     await new Promise((resolve) => setTimeout(resolve, 1000));
