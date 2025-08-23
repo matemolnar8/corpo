@@ -87,8 +87,12 @@ Tool rules:
 - When you need credentials or are unsure which secret names exist, first call list_secrets to view the available placeholders and then use those placeholders (e.g., {{secret.NAME}}) in subsequent tool calls. Never include raw secret values in messages.
 - When using browser_evaluate, save the code in REPRO.
 
-User step: ${nextAction}
+User step:
+\`\`\`
+${nextAction}
+
 ${refinement ? `Refinement: ${refinement}` : ""}
+\`\`\`
 `;
 
         logger.debug("Recorder", "About to run model for this step with the following prompt:");

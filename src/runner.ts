@@ -80,9 +80,14 @@ Tool rules:
 
 When finished, output a single line starting with 'DONE'. Only output 'DONE' if the step is fully completed. Otherwise, if there was an error, output 'ERROR' and explain the error.
 
-Step: ${step.instruction}
+Step: 
+\`\`\`
+${step.instruction}
+
 How to reproduce: ${step.reproduction}
-${refinement ? `Refinement: ${refinement}` : ""}`;
+${refinement ? `Refinement: ${refinement}` : ""}
+\`\`\`
+`;
 
         logger.debug("Runner", "About to run model for this step with the following prompt:");
         logger.debug("Runner", prompt);
