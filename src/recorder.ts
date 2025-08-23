@@ -1,4 +1,4 @@
-import { generateText, stepCountIs } from "ai";
+import { generateText } from "ai";
 import { saveWorkflow, Workflow, WorkflowStep } from "./workflows.ts";
 import { PlaywrightMCP } from "./tools/mcp/playwright-mcp.ts";
 import { accumulateTokenUsage, initTokenUsageSummary, logTokenUsageSummary, printModelResult } from "./utils.ts";
@@ -7,7 +7,7 @@ import { userInputTool } from "./tools/user-input.ts";
 import { listVariablesTool, resetVariables, retrieveVariableTool, storeVariableTool } from "./tools/variable.ts";
 import { snapshotGetAndFilterTool } from "./tools/snapshot-get-and-filter.ts";
 import { input, select } from "./cli_prompts.ts";
-import { model } from "./model.ts";
+import { model, stopWhen } from "./model.ts";
 import { listSecretsTool, loadSecrets } from "./tools/secret.ts";
 
 export class WorkflowRecorder {
@@ -103,7 +103,7 @@ ${refinement ? `Refinement: ${refinement}` : ""}
           model: model,
           tools: allTools,
           prompt,
-          stopWhen: stepCountIs(10),
+          stopWhen,
         });
 
         // Use shared utility to print model results

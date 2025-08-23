@@ -1,4 +1,4 @@
-import { generateText, stepCountIs } from "ai";
+import { generateText } from "ai";
 import { listWorkflows, loadWorkflow } from "./workflows.ts";
 import { PlaywrightMCP } from "./tools/mcp/playwright-mcp.ts";
 import { accumulateTokenUsage, initTokenUsageSummary, logTokenUsageSummary, printModelResult } from "./utils.ts";
@@ -9,7 +9,7 @@ import { snapshotGetAndFilterTool } from "./tools/snapshot-get-and-filter.ts";
 import { listSecretsTool } from "./tools/secret.ts";
 import { cyan as _cyan, gray as _gray, green as _green, red as _red, yellow as _yellow } from "@std/fmt/colors";
 import { input, select } from "./cli_prompts.ts";
-import { model } from "./model.ts";
+import { model, stopWhen } from "./model.ts";
 import { loadSecrets } from "./tools/secret.ts";
 
 export class WorkflowRunner {
@@ -83,7 +83,7 @@ ${refinement ? `Refinement: ${refinement}` : ""}`;
           model: model,
           tools: allTools,
           prompt,
-          stopWhen: stepCountIs(10),
+          stopWhen,
         });
 
         printModelResult(result, "Runner");
