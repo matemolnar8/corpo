@@ -1,7 +1,7 @@
 import { generateText, stepCountIs } from "ai";
 import { saveWorkflow, Workflow, WorkflowStep } from "./workflows.ts";
 import { PlaywrightMCP } from "./tools/mcp/playwright-mcp.ts";
-import { printModelResult } from "./utils.ts";
+import { accumulateTokenUsage, initTokenUsageSummary, logTokenUsageSummary, printModelResult } from "./utils.ts";
 import { logger } from "./log.ts";
 import { userInputTool } from "./tools/user-input.ts";
 import { listVariablesTool, resetVariables, retrieveVariableTool, storeVariableTool } from "./tools/variable.ts";
@@ -26,6 +26,7 @@ export class WorkflowRecorder {
 
     logger.info("Recorder", `Exposed tools: ${Object.keys(allTools).join(", ") || "<none>"}`);
     const steps: WorkflowStep[] = [];
+    const tokenSummary = initTokenUsageSummary();
 
     const workflowName = input({
       message: "Workflow name:",
@@ -103,6 +104,7 @@ ${refinement ? `Refinement: ${refinement}` : ""}
 
         // Use shared utility to print model results
         printModelResult(result, "Recorder");
+        accumulateTokenUsage(tokenSummary, result);
 
         const resultText = result.text?.trim() ?? "";
 
@@ -152,6 +154,7 @@ ${refinement ? `Refinement: ${refinement}` : ""}
       steps,
     };
 
+    logTokenUsageSummary("Recorder", tokenSummary);
     const file = await saveWorkflow(workflow);
     logger.success("Recorder", `Saved workflow to ${file}`);
   }

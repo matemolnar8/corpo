@@ -64,6 +64,36 @@ export function printModelResult(
   }
 }
 
+// Token usage aggregation helpers
+export type TokenUsageSummary = {
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+  calls: number;
+};
+
+export function initTokenUsageSummary(): TokenUsageSummary {
+  return { inputTokens: 0, outputTokens: 0, totalTokens: 0, calls: 0 };
+}
+
+// deno-lint-ignore no-explicit-any
+export function accumulateTokenUsage(summary: TokenUsageSummary, result: GenerateTextResult<any, any>): void {
+  const input = result.totalUsage?.inputTokens ?? 0;
+  const output = result.totalUsage?.outputTokens ?? 0;
+  const total = result.totalUsage?.totalTokens ?? (input + output);
+  summary.inputTokens += input;
+  summary.outputTokens += output;
+  summary.totalTokens += total;
+  summary.calls += 1;
+}
+
+export function logTokenUsageSummary(context: string, summary: TokenUsageSummary): void {
+  logger.info(
+    context,
+    `Token usage summary: calls: ${summary.calls}, tokens in: ${summary.inputTokens}, tokens out: ${summary.outputTokens}, total tokens: ${summary.totalTokens}`,
+  );
+}
+
 export async function exit(code = 0) {
   logger.info("Core", "Exiting...");
   await disconnectPlaywrightMCP();

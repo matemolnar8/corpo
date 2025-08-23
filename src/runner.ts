@@ -1,7 +1,7 @@
 import { generateText, stepCountIs } from "ai";
 import { listWorkflows, loadWorkflow } from "./workflows.ts";
 import { PlaywrightMCP } from "./tools/mcp/playwright-mcp.ts";
-import { printModelResult } from "./utils.ts";
+import { accumulateTokenUsage, initTokenUsageSummary, logTokenUsageSummary, printModelResult } from "./utils.ts";
 import { logger } from "./log.ts";
 import { userInputTool } from "./tools/user-input.ts";
 import { listVariablesTool, resetVariables, retrieveVariableTool, storeVariableTool } from "./tools/variable.ts";
@@ -31,6 +31,8 @@ export class WorkflowRunner {
 
     const modeText = autoMode ? "AUTO" : "interactive";
     logger.info("Runner", `Running workflow '${wf.name}' in ${modeText} mode with ${wf.steps.length} steps`);
+
+    const tokenSummary = initTokenUsageSummary();
 
     for (let i = 0; i < wf.steps.length; i += 1) {
       const step = wf.steps[i];
@@ -79,6 +81,7 @@ ${refinement ? `Refinement: ${refinement}` : ""}`;
         });
 
         printModelResult(result, "Runner");
+        accumulateTokenUsage(tokenSummary, result);
 
         if (autoMode) {
           // Auto mode logic: assume step is complete if tools were called or "DONE" is output
@@ -123,6 +126,7 @@ ${refinement ? `Refinement: ${refinement}` : ""}`;
       }
     }
 
+    logTokenUsageSummary("Runner", tokenSummary);
     const completionText = autoMode ? "completed in AUTO mode" : "completed";
     logger.success("Runner", `Workflow ${completionText}.`);
   }
