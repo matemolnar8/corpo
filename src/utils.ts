@@ -101,3 +101,16 @@ export async function exit(code = 0) {
   await new Promise((resolve) => setTimeout(resolve, 1000));
   Deno.exit(code);
 }
+
+export function deferPromise<T>(): {
+  promise: Promise<T>;
+  resolve: (value: T) => void;
+  reject: (reason?: unknown) => void;
+} {
+  let deferred: { resolve: (value: T) => void; reject: (reason?: unknown) => void } | undefined;
+  const promise = new Promise<T>((resolve, reject) => {
+    deferred = { resolve, reject };
+  });
+
+  return { promise, resolve: deferred!.resolve, reject: deferred!.reject };
+}

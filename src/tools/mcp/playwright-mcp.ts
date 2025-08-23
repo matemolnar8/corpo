@@ -6,6 +6,7 @@ import { logger, stringifySmall } from "../../log.ts";
 import type { ImageContent, TextContent } from "@modelcontextprotocol/sdk/types.js";
 import { setVariable } from "../variable.ts";
 import { replaceSecretsInArgs } from "../secret.ts";
+import { deferPromise } from "../../utils.ts";
 
 const PLAYWRIGHT_MCP = {
   command: "npx",
@@ -68,11 +69,20 @@ export class PlaywrightMCP {
     return this.filterAllowedTools(all);
   }
 
-  callTool(
+  private previousToolPromise?: Promise<void>;
+
+  async callTool(
     name: string,
     args: Record<string, unknown>,
     options: { includeSnapshot?: boolean } = {},
   ) {
+    if (this.previousToolPromise) {
+      await this.previousToolPromise;
+    }
+
+    const previousToolDeferred = deferPromise<void>();
+    this.previousToolPromise = previousToolDeferred.promise;
+
     if (name === "browser_snapshot_and_save") {
       return this.snapshotAndSaveTool.execute!(args as { variable: string }, {
         messages: [],
@@ -80,7 +90,9 @@ export class PlaywrightMCP {
       });
     }
 
-    return this.callMcpTool(name, args, options);
+    const result = await this.callMcpTool(name, args, options);
+    previousToolDeferred.resolve();
+    return result;
   }
 
   async callMcpTool(

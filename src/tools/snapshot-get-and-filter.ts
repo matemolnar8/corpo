@@ -208,7 +208,9 @@ export const snapshotGetAndFilterInputSchema = z.object({
         .describe("Match descriptor attributes like level=4, cursor=pointer"),
     })
     .default({}),
-  includeSubtree: z.boolean().default(true).describe("Include the full subtree of matched nodes"),
+  includeSubtree: z.boolean().default(false).describe(
+    "Include the full subtree of matched nodes. Expensive, should be used when absolutely necessary.",
+  ),
   mode: z.enum(["first", "all"]).default("all").describe("Return only the first match or all matches"),
   maxResults: z.number().int().positive().optional().describe("Limit the number of returned matches"),
   storeInVariable: z.string().optional().describe("If provided, store the YAML result in this variable name"),
