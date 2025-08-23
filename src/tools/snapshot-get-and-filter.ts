@@ -201,13 +201,16 @@ export const snapshotGetAndFilterInputSchema = z.object({
           z.object({ regex: z.string(), flags: z.string().optional() }),
         ])
         .optional()
-        .describe("Filter by accessible name/text using equals, contains, or regex"),
+        .describe(
+          "Filter by accessible name/text using equals, contains, or regex.",
+        ),
       attributes: z
         .record(z.string(), z.union([z.string(), z.number(), z.boolean()]))
         .optional()
         .describe("Match descriptor attributes like level=4, cursor=pointer"),
     })
-    .default({}),
+    .default({})
+    .describe("Filter by accessibility role/text/attributes. Make sure to use the most specific filter possible."),
   includeSubtree: z.boolean().default(false).describe(
     "Include the full subtree of matched nodes. Expensive, should be used when absolutely necessary.",
   ),
@@ -229,6 +232,7 @@ export const snapshotGetAndFilterTool = tool({
   inputSchema: snapshotGetAndFilterInputSchema,
   outputSchema: snapshotGetAndFilterOutputSchema,
   execute: ({ variable, filter, includeSubtree, mode, maxResults, storeInVariable }) => {
+    const MAX_JSON_CHARS = 30_000;
     // Start log
     let __argsStr = "";
     try {
@@ -272,6 +276,17 @@ export const snapshotGetAndFilterTool = tool({
     });
 
     const json = JSON.stringify(matches, null, 2);
+
+    // Enforce size limit to encourage narrower filters
+    if (json.length > MAX_JSON_CHARS) {
+      const reason = `Filtered result too large (${json.length} > ${MAX_JSON_CHARS} chars). ` +
+        "Narrow your filter: restrict 'role'/'text'/'attributes', avoid 'includeSubtree' unless required, or set 'maxResults'.";
+      logger.debug(
+        "Tool",
+        `snapshot_get_and_filter result: ${JSON.stringify({ success: false, count: matches.length, reason })}`,
+      );
+      return { success: false, count: matches.length, reason };
+    }
 
     if (storeInVariable) {
       setVariable(storeInVariable, json);

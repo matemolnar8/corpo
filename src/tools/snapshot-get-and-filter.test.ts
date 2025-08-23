@@ -77,3 +77,28 @@ Deno.test("snapshot get and filter extract bookings from specified date from clo
 
   assertSnapshot(context, bookingsResult);
 });
+
+Deno.test("snapshot get and filter enforces size limit and returns failure when too large", async () => {
+  resetVariables();
+  // Construct a synthetic large snapshot result by creating many similar nodes under a role
+  const nodes: unknown[] = [];
+  for (let i = 0; i < 2000; i++) {
+    nodes.push('row "Item' + i + '"');
+  }
+  const yaml = `table:\n  - ${nodes.join("\n  - ")}`;
+  setVariable("large_snapshot", yaml);
+
+  const result = await snapshotGetAndFilterTool.execute!(
+    {
+      variable: "large_snapshot",
+      filter: { role: "row" },
+      includeSubtree: false,
+      mode: "all",
+    },
+    { messages: [], toolCallId: crypto.randomUUID() },
+  );
+
+  const { success, reason } = result as { success: boolean; reason?: string };
+  expect(success).toBe(false);
+  expect(reason).toContain("Filtered result too large");
+});

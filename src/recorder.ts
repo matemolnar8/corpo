@@ -68,17 +68,22 @@ export class WorkflowRecorder {
 
 Rules:
 - Keep calling tools as needed until the step is fully completed; do not stop after a single tool call.
-- Prefer: take a page snapshot -> analyze snapshot -> perform the precise action (e.g., click) using a robust selector or description.
+- Prefer: take a page snapshot -> filter with snapshot_get_and_filter -> analyze -> perform the precise action (e.g., click) using a robust selector or description.
 - Only when the step is fully done, output a SINGLE line starting with 'REPRO:' followed by a concise, imperative description that can reproduce this step later. This instruction should include details that help the runner, like the tools used and a description of how to find the targeted elements.
 - The REPRO line should only mention specific elements if they are expected to be constant. If the element depends on previous actions, then they should be located dynamically instead of being saved in the instruction.
 - The REPRO line should contain the tools used to perform the step.
 - If the instruction is to click text (e.g., 'Bookings' or 'leading article heading'), first snapshot and analyze to find a stable descriptor, then click using that descriptor.
 
+Snapshot guidance:
+- Snapshots are ARIA accessibility snapshots (accessibility trees). Node descriptors use ARIA roles (e.g., 'button', 'link', 'heading', 'row') and accessible names.
+- Prefer locating elements by role and accessible name. Use attributes from descriptors (e.g., [level=2], [checked]) when helpful.
+- Use the snapshot_get_and_filter tool to filter stored snapshots by role/text/attributes. Avoid loading entire snapshots into the model.
+
 Tool rules:
-- Use browser_evaluate to run JavaScript code in the context of the page. This can be used for finding elements and extracting information. Do not use it for actions that can be performed with other tools.
+- Prefer snapshot_get_and_filter for locating elements, reading text, and checking attributes. Use browser_evaluate only when snapshot filtering cannot achieve the goal. Do not use it for actions that can be performed with other tools.
 - Use the store_variable tool to store the result of your actions in a variable when needed to use in a later step.
 - Snapshots can be stored in variables with the browser_snapshot_and_save tool. Use the retrieve_variable tool to get the snapshot and analyze it.
-- Use the snapshot_get_and_filter tool to filter a stored snapshot to find specific elements. This should be preferred as reading the full snapshot by the model is slow and expensive.
+- Use the snapshot_get_and_filter tool to filter a stored snapshot to find specific elements. This is the default path for element discovery and should be preferred over running JavaScript; reading the full snapshot by the model is slow and expensive.
 - When you need credentials or are unsure which secret names exist, first call list_secrets to view the available placeholders and then use those placeholders (e.g., {{secret.NAME}}) in subsequent tool calls. Never include raw secret values in messages.
 - When using browser_evaluate, save the code in REPRO.
 
