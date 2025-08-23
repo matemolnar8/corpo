@@ -24,10 +24,15 @@ export function input(options: {
 export function select<T>(options: {
   message: string;
   choices: ReadonlyArray<{ name: string; value: T }>;
+  defaultIndex?: number; // 0-based index of default choice; Enter selects it
 }): T {
-  const { message, choices } = options;
+  const { message, choices, defaultIndex } = options;
   if (!choices || choices.length === 0) {
     throw new Error("No choices provided to select()");
+  }
+
+  if (defaultIndex !== undefined && (defaultIndex < 0 || defaultIndex >= choices.length)) {
+    throw new Error(`defaultIndex ${defaultIndex} is out of bounds for choices length ${choices.length}`);
   }
 
   while (true) {
@@ -36,13 +41,19 @@ export function select<T>(options: {
       console.log(`  ${i + 1}. ${choices[i].name}`);
     }
 
-    const ans = prompt("Enter choice number:");
+    const defaultSuffix = defaultIndex !== undefined ? ` [${defaultIndex + 1}]` : "";
+    const ans = prompt(`Enter choice number${defaultSuffix}:`);
 
     if (ans === null) {
       throw new Error("Input cancelled.");
     }
 
-    const idx = Number.parseInt(ans.trim(), 10);
+    const raw = ans.trim();
+    if (raw.length === 0 && defaultIndex !== undefined) {
+      return choices[defaultIndex].value;
+    }
+
+    const idx = Number.parseInt(raw, 10);
     if (!Number.isNaN(idx) && idx >= 1 && idx <= choices.length) {
       return choices[idx - 1].value;
     }

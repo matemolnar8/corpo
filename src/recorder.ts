@@ -42,32 +42,22 @@ export class WorkflowRecorder {
     // Guidance
     logger.info(
       "Recorder",
-      "Recording started. Describe each step in natural language (e.g., 'open https://intranet and sign in', 'click the Bookings tab', 'copy the booking dates'). The agent will pick a tool and arguments. Type 'done' to finish.",
+      "Recording started. Describe each step in natural language (e.g., 'open https://intranet and sign in', 'click the Bookings tab', 'copy the booking dates'). The agent will pick a tool and arguments. Type 'done' to finish, or 'cancel' to abort.",
     );
 
     // Loop adding steps
     while (true) {
-      const action = select(
-        {
-          message: "Next action:",
-          choices: [
-            { name: "Add step", value: "add" },
-            { name: "Finish and save", value: "done" },
-            { name: "Cancel", value: "cancel" },
-          ] as const,
-        },
-      );
+      const nextAction = input({
+        message: "Describe the next action (or type 'done' / 'cancel'):",
+        required: true,
+      });
 
-      if (action === "done") break;
-      if (action === "cancel") {
+      const lowered = nextAction.trim().toLowerCase();
+      if (lowered === "done") break;
+      if (lowered === "cancel") {
         logger.warn("Recorder", "Cancelled; no workflow saved.");
         return;
       }
-
-      const nextAction = input({
-        message: "Describe the next action:",
-        required: true,
-      });
 
       // Per-step refinement loop: plan -> execute -> validate -> (maybe refine and re-run)
       let accepted = false;
@@ -119,6 +109,7 @@ ${refinement ? `Refinement: ${refinement}` : ""}
             { name: "Provide change instructions and re-run", value: "refine" },
             { name: "Discard this step", value: "discard" },
           ] as const,
+          defaultIndex: 0,
         });
 
         if (decision === "accept") {

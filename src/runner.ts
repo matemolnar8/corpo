@@ -115,6 +115,7 @@ ${refinement ? `Refinement: ${refinement}` : ""}`;
               { name: "Re-run with change instructions", value: "refine" },
               { name: "Abort workflow", value: "abort" },
             ] as const,
+            defaultIndex: 0,
           });
 
           if (decision === "continue") {
@@ -146,6 +147,7 @@ ${refinement ? `Refinement: ${refinement}` : ""}`;
     const name = select({
       message: "Select workflow:",
       choices: names.map((n) => ({ name: n, value: n })),
+      defaultIndex: 0,
     });
     return name as string;
   }
