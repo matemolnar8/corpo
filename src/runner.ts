@@ -6,15 +6,18 @@ import { logger } from "./log.ts";
 import { userInputTool } from "./tools/user-input.ts";
 import { listVariablesTool, resetVariables, retrieveVariableTool, storeVariableTool } from "./tools/variable.ts";
 import { snapshotGetAndFilterTool } from "./tools/snapshot-get-and-filter.ts";
+import { listSecretsTool } from "./tools/secret.ts";
 import { cyan as _cyan, gray as _gray, green as _green, red as _red, yellow as _yellow } from "@std/fmt/colors";
 import { input, select } from "./cli_prompts.ts";
 import { model } from "./model.ts";
+import { loadSecrets } from "./tools/secret.ts";
 
 export class WorkflowRunner {
   constructor(private mcp: PlaywrightMCP) {}
 
   async run(workflowName?: string, autoMode: boolean = false): Promise<void> {
     resetVariables();
+    await loadSecrets();
     const name = await this.selectWorkflow(workflowName);
     const wf = await loadWorkflow(name);
 
@@ -25,6 +28,7 @@ export class WorkflowRunner {
       store_variable: storeVariableTool,
       retrieve_variable: retrieveVariableTool,
       list_variables: listVariablesTool,
+      list_secrets: listSecretsTool,
       snapshot_get_and_filter: snapshotGetAndFilterTool,
     };
     logger.info("Runner", `Exposed tools: ${Object.keys(allTools).join(", ") || "<none>"}`);
@@ -64,6 +68,8 @@ Rules:
 - Use the store_variable tool to store the result of your actions in a variable when needed to use in a later step.
 - Snapshots can be stored in variables with the browser_snapshot_and_save tool. Use the retrieve_variable tool to get the snapshot and analyze it.
 - Use the snapshot_get_and_filter tool to filter a stored snapshot to find specific elements. This should be preferred as reading the full snapshot by the model is slow and expensive.
+- If you need to reference a credential or secret in a tool call, use placeholders like {{secret.NAME}}. Do not reveal secret values; placeholders will be replaced at tool-execution time.
+- When you need credentials or are unsure which secret names exist, first call list_secrets to view the available placeholders and then use those placeholders (e.g., {{secret.NAME}}) in subsequent tool calls. Never include raw secret values in messages.
 - When finished, output a single line starting with 'DONE'. Only output 'DONE' if the step is fully completed. Otherwise, if there was an error, output 'ERROR' and explain the error.
 
 Step: ${step.instruction}
@@ -86,7 +92,7 @@ ${refinement ? `Refinement: ${refinement}` : ""}`;
         if (autoMode) {
           // Auto mode logic: assume step is complete if tools were called or "DONE" is output
           const outputText = (result.text ?? "").trim().toLowerCase();
-          if (outputText.includes("done") || result.toolCalls.length > 0) {
+          if (outputText.includes("done")) {
             stepFinished = true;
             logger.success("Runner", `[Auto Mode] Step ${i + 1} completed successfully`);
           } else if (attempts >= maxAttempts) {

@@ -5,6 +5,7 @@ import { jsonSchema } from "@ai-sdk/provider-utils";
 import { logger, stringifySmall } from "../../log.ts";
 import type { ImageContent, TextContent } from "@modelcontextprotocol/sdk/types.js";
 import { setVariable } from "../variable.ts";
+import { replaceSecretsInArgs } from "../secret.ts";
 
 const PLAYWRIGHT_MCP = {
   command: "npx",
@@ -88,9 +89,11 @@ export class PlaywrightMCP {
     options: { includeSnapshot?: boolean } = {},
   ) {
     const client = this.getClient();
+    // Log placeholders but not resolved secret values
     logger.debug("MCP", `Tool '${name}' args: ${stringifySmall(args)}`);
     try {
-      const result = await (client.callTool(name, args) as Promise<PlaywrightToolOutput>);
+      const safeArgs = replaceSecretsInArgs(args);
+      const result = await (client.callTool(name, safeArgs) as Promise<PlaywrightToolOutput>);
       const filtered = options.includeSnapshot ? result : this.removeSnapshots(result);
       logger.debug("MCP", `Tool '${name}' result: ${stringifySmall(filtered)}`);
       return filtered;

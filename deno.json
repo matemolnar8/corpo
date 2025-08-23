@@ -1,6 +1,6 @@
 {
   "tasks": {
-    "run": "deno run --env-file --allow-net --allow-env --allow-run=npx --allow-write=./workflows --allow-read=./workflows src/index.ts",
+    "run": "deno run --env-file --allow-net --allow-env --allow-run=npx --allow-write=./workflows --allow-read=./workflows,./secrets.json src/index.ts",
     "debug": "deno run --inspect --env-file --allow-net --allow-env --allow-run=npx --allow-write=./workflows --allow-read=./workflows src/index.ts"
   },
   "imports": {

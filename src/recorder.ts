@@ -8,12 +8,14 @@ import { listVariablesTool, resetVariables, retrieveVariableTool, storeVariableT
 import { snapshotGetAndFilterTool } from "./tools/snapshot-get-and-filter.ts";
 import { input, select } from "./cli_prompts.ts";
 import { model } from "./model.ts";
+import { listSecretsTool, loadSecrets } from "./tools/secret.ts";
 
 export class WorkflowRecorder {
   constructor(private mcp: PlaywrightMCP) {}
 
   async interactiveRecord(): Promise<void> {
     resetVariables();
+    await loadSecrets();
     const mcpTools = await this.mcp.getAiTools();
     const allTools = {
       ...mcpTools,
@@ -22,6 +24,7 @@ export class WorkflowRecorder {
       retrieve_variable: retrieveVariableTool,
       snapshot_get_and_filter: snapshotGetAndFilterTool,
       list_variables: listVariablesTool,
+      list_secrets: listSecretsTool,
     };
 
     logger.info("Recorder", `Exposed tools: ${Object.keys(allTools).join(", ") || "<none>"}`);
@@ -86,6 +89,7 @@ Tool rules:
 - Use the store_variable tool to store the result of your actions in a variable when needed to use in a later step.
 - Snapshots can be stored in variables with the browser_snapshot_and_save tool. Use the retrieve_variable tool to get the snapshot and analyze it.
 - Use the snapshot_get_and_filter tool to filter a stored snapshot to find specific elements. This should be preferred as reading the full snapshot by the model is slow and expensive.
+- When you need credentials or are unsure which secret names exist, first call list_secrets to view the available placeholders and then use those placeholders (e.g., {{secret.NAME}}) in subsequent tool calls. Never include raw secret values in messages.
 - When using browser_evaluate, save the code in REPRO.
 
 User step: ${nextAction}
