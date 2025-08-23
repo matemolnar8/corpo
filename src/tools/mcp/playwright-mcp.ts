@@ -27,7 +27,7 @@ export class PlaywrightMCP {
     "browser_select_option",
     "browser_tab_list",
     "browser_tab_select",
-    // "browser_evaluate",
+    "browser_evaluate",
     // "browser_snapshot",
   ];
 
