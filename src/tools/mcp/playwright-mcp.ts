@@ -11,7 +11,7 @@ const PLAYWRIGHT_MCP = {
   args: ["@playwright/mcp@latest"] as const,
 } as const;
 
-type PlaywrightToolOutput = { content: (TextContent | ImageContent)[]; isError?: boolean };
+export type PlaywrightToolOutput = { content: (TextContent | ImageContent)[]; isError?: boolean };
 
 export class PlaywrightMCP {
   private client?: MCPClient;
@@ -67,7 +67,11 @@ export class PlaywrightMCP {
     return this.filterAllowedTools(all);
   }
 
-  callTool(name: string, args: Record<string, unknown>) {
+  callTool(
+    name: string,
+    args: Record<string, unknown>,
+    options: { includeSnapshot?: boolean } = {},
+  ) {
     if (name === "browser_snapshot_and_save") {
       return this.snapshotAndSaveTool.execute!(args as { variable: string }, {
         messages: [],
@@ -75,16 +79,21 @@ export class PlaywrightMCP {
       });
     }
 
-    return this.callMcpTool(name, args);
+    return this.callMcpTool(name, args, options);
   }
 
-  async callMcpTool(name: string, args: Record<string, unknown>) {
+  async callMcpTool(
+    name: string,
+    args: Record<string, unknown>,
+    options: { includeSnapshot?: boolean } = {},
+  ) {
     const client = this.getClient();
     logger.debug("MCP", `Tool '${name}' args: ${stringifySmall(args)}`);
     try {
       const result = await (client.callTool(name, args) as Promise<PlaywrightToolOutput>);
-      logger.debug("MCP", `Tool '${name}' result: ${stringifySmall(result)}`);
-      return result;
+      const filtered = options.includeSnapshot ? result : this.removeSnapshots(result);
+      logger.debug("MCP", `Tool '${name}' result: ${stringifySmall(filtered)}`);
+      return filtered;
     } catch (err) {
       logger.error("MCP", `Tool '${name}' errored: ${String(err)}`);
       throw err;
@@ -95,12 +104,31 @@ export class PlaywrightMCP {
     const map: Record<string, Tool> = {};
 
     for (const t of tools) {
+      const baseProps = t.inputSchema?.properties ?? {};
+      const baseRequired = t.inputSchema?.required ?? [];
+      const inputSchema = jsonSchema(
+        {
+          type: "object",
+          properties: {
+            ...baseProps,
+            includeSnapshot: {
+              type: "boolean",
+              description: "If true, include raw YAML snapshot/image content in results.",
+              default: false,
+            },
+          },
+          required: baseRequired,
+          additionalProperties: true,
+        } as const,
+      );
       map[t.name] = tool({
         description: t.description ?? `MCP tool ${t.name}`,
-        inputSchema: (t.inputSchema && jsonSchema(t.inputSchema)) ??
-          z.toJSONSchema(z.object({})),
+        inputSchema,
         execute: (options: unknown) => {
-          return this.callTool(t.name, options as Record<string, unknown>);
+          const { includeSnapshot, ...rest } = (options as Record<string, unknown>) ?? {};
+          return this.callTool(t.name, rest as Record<string, unknown>, {
+            includeSnapshot: Boolean(includeSnapshot),
+          });
         },
       });
     }
@@ -118,7 +146,7 @@ export class PlaywrightMCP {
     execute: async (options) => {
       logger.debug("Tool", `snapshotAndSave args: ${stringifySmall(options)}`);
       const { variable } = options;
-      const result = await this.callMcpTool("browser_snapshot", {});
+      const result = await this.callMcpTool("browser_snapshot", {}, { includeSnapshot: true });
 
       const textContent = result.content.find((content) => content.type === "text");
 
@@ -147,6 +175,25 @@ export class PlaywrightMCP {
   async getAiTools() {
     const tools = await this.listFilteredTools();
     return this.buildAiTools(tools);
+  }
+
+  private removeSnapshots(result: PlaywrightToolOutput): PlaywrightToolOutput {
+    try {
+      const filteredContent: (TextContent | ImageContent)[] = [];
+      for (const c of result.content) {
+        if (c.type === "text") {
+          const withoutYaml = c.text.replace(/```yaml[\s\S]*?```/g, "").trim();
+          if (withoutYaml) {
+            filteredContent.push({ type: "text", text: withoutYaml });
+          }
+        } else if (c.type === "image") {
+          filteredContent.push(c);
+        }
+      }
+      return { ...result, content: filteredContent };
+    } catch {
+      return result;
+    }
   }
 }
 

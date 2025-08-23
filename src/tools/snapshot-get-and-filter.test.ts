@@ -9,7 +9,7 @@ Deno.test("snapshot get and filter extracts heading and link from applitools sna
   const mcp = await connectPlaywrightMCP({ headless: true });
 
   await mcp.callTool("browser_navigate", { url: "https://demo.applitools.com/" });
-  await mcp.callTool("snapshotAndSave", { variable: "applitools_snapshot" });
+  await mcp.callTool("browser_snapshot_and_save", { variable: "applitools_snapshot" });
 
   expect(getVariable("applitools_snapshot")).toBeDefined();
 
