@@ -90,15 +90,18 @@ export class PlaywrightMCP {
     // Workaround for race condition in Playwright MCP
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
+    let result;
     if (name === "browser_snapshot_and_save") {
-      return this.snapshotAndSaveTool.execute!(args as { variable: string }, {
+      result = await this.snapshotAndSaveTool.execute!(args as { variable: string }, {
         messages: [],
         toolCallId: crypto.randomUUID(),
       });
+    } else {
+      result = await this.callMcpTool(name, args, options);
     }
 
-    const result = await this.callMcpTool(name, args, options);
     previousToolDeferred.resolve();
+
     return result;
   }
 

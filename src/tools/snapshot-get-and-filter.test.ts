@@ -3,6 +3,9 @@ import { snapshotGetAndFilterTool } from "./snapshot-get-and-filter.ts";
 import { connectPlaywrightMCP } from "./mcp/playwright-mcp.ts";
 import { getVariable, resetVariables, setVariable } from "./variable.ts";
 import { assertSnapshot } from "@std/testing/snapshot";
+import { setLogLevel } from "../log.ts";
+
+setLogLevel("debug");
 
 Deno.test("snapshot get and filter extracts heading and link from applitools snapshot", async (context) => {
   resetVariables();
