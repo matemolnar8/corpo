@@ -69,9 +69,14 @@ export class WorkflowRecorder {
 Rules:
 - Keep calling tools as needed until the step is fully completed; do not stop after a single tool call.
 - Prefer: take a page snapshot -> filter with snapshot_get_and_filter -> analyze -> perform the precise action (e.g., click) using a robust selector or description.
-- Only when the step is fully done, output a SINGLE line starting with 'REPRO:' followed by a concise, imperative description that can reproduce this step later. This instruction should include details that help the runner, like the tools used and a description of how to find the targeted elements.
-- The REPRO line should only mention specific elements if they are expected to be constant. If the element depends on previous actions, then they should be located dynamically instead of being saved in the instruction.
-- The REPRO line should contain the tools used to perform the step.
+- When the step is fully done, ALWAYS output a REPRO block that describes how to reproduce the step later.
+- Start a line with \`REPRO:\`, then provide one or more lines of instructions, and finish with a line \`ENDREPRO\`. Do not include code fences. Example:
+  REPRO:
+  use snapshot_get_and_filter to locate the button [name="Submit"] and click it
+  verify the confirmation toast appears with role="status" and text includes "Saved"
+  ENDREPRO
+- The REPRO block should only mention specific elements if they are expected to be stable; otherwise describe how to locate them dynamically.
+- The REPRO block MUST include the tools used to perform the step.
 - If the instruction is to click text (e.g., 'Bookings' or 'leading article heading'), first snapshot and analyze to find a stable descriptor, then click using that descriptor.
 
 Snapshot guidance:
@@ -85,7 +90,6 @@ Tool rules:
 - Snapshots can be stored in variables with the browser_snapshot_and_save tool. Use the retrieve_variable tool to get the snapshot and analyze it.
 - Use the snapshot_get_and_filter tool to filter a stored snapshot to find specific elements. This is the default path for element discovery and should be preferred over running JavaScript; reading the full snapshot by the model is slow and expensive.
 - When you need credentials or are unsure which secret names exist, first call list_secrets to view the available placeholders and then use those placeholders (e.g., {{secret.NAME}}) in subsequent tool calls. Never include raw secret values in messages.
-- When using browser_evaluate, save the code in REPRO.
 
 User step:
 \`\`\`
@@ -126,10 +130,13 @@ ${refinement ? `Refinement: ${refinement}` : ""}
             message: "Optional note for this step:",
           });
 
-          const reproMatch = resultText.match(/^REPRO:\s*(.+)$/m);
-          const reproduction = reproMatch ? reproMatch[1].trim() : (resultText || nextAction).slice(0, 140);
-          if (!reproMatch) {
-            logger.warn("Recorder", "No explicit REPRO: line found; falling back to truncated text/instruction.");
+          const blockMatch = resultText.match(/^REPRO:\s*\r?\n([\s\S]*?)\r?\nENDREPRO\b/m);
+          const reproduction = blockMatch ? blockMatch[1].trim() : (resultText || nextAction).slice(0, 140);
+          if (!blockMatch) {
+            logger.warn(
+              "Recorder",
+              "No explicit REPRO block (REPRO: ... ENDREPRO) found; falling back to truncated text/instruction.",
+            );
           }
 
           steps.push({

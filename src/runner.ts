@@ -84,7 +84,9 @@ Step:
 \`\`\`
 ${step.instruction}
 
-How to reproduce: ${step.reproduction}
+How to reproduce:
+${step.reproduction}
+
 ${refinement ? `Refinement: ${refinement}` : ""}
 \`\`\`
 `;
