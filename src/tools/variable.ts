@@ -55,7 +55,7 @@ export const storeVariableTool = tool<
     setVariable(name, value);
     logger.info(
       "Tool",
-      `Variable '${name}' stored with value '${value.substring(0, 50)}${value.length > 50 ? "..." : ""}'`,
+      `📦 Variable '${name}' stored with value '${value.substring(0, 50)}${value.length > 50 ? "..." : ""}'`,
     );
     const output = { success: true } as const;
     logger.debug("Tool", `store_variable result: ${stringifySmall(output)}`);
@@ -97,7 +97,7 @@ export const retrieveVariableTool = tool<
 
     logger.info(
       "Tool",
-      `Variable '${name}' retrieved with value '${value.substring(0, 50)}${value.length > 50 ? "..." : ""}'`,
+      `📦 Variable '${name}' retrieved with value '${value.substring(0, 50)}${value.length > 50 ? "..." : ""}'`,
     );
     const output = { success: true, value } as const;
     logger.debug("Tool", `retrieve_variable result: ${stringifySmall(output)}`);

@@ -16,6 +16,7 @@ export const userInputTool = tool({
   inputSchema: userInputInputSchema,
   outputSchema: userInputOutputSchema,
   execute: ({ question }) => {
+    logger.info("Tool", `❓ user_input: prompting user with question: ${stringifySmall({ question })}`);
     logger.debug("Tool", `user_input args: ${stringifySmall({ question })}`);
     const answer = input({ message: question });
     const output = { userInput: answer ?? "" } as const;

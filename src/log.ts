@@ -1,4 +1,4 @@
-import { gray, green, red, yellow } from "@std/fmt/colors";
+import { blue, bold, cyan, gray, green, magenta, red, yellow } from "@std/fmt/colors";
 
 export type LogLevel = "default" | "debug";
 
@@ -12,8 +12,30 @@ export function getLogLevel(): LogLevel {
   return currentLogLevel;
 }
 
+function hashString(input: string): number {
+  let hash = 0;
+  for (let i = 0; i < input.length; i++) {
+    // Simple 32-bit hash
+    hash = ((hash << 5) - hash + input.charCodeAt(i)) | 0;
+  }
+  return hash >>> 0; // ensure unsigned
+}
+
+const tagColors: Array<(s: string) => string> = [cyan, magenta, blue, green, yellow, gray];
+export const TAG_COLOR_COUNT = tagColors.length;
+
+export function computeTagColorIndex(tag: string): number {
+  return hashString(tag) % tagColors.length;
+}
+
+function tagColor(tag: string): (s: string) => string {
+  const idx = computeTagColorIndex(tag);
+  return tagColors[idx] ?? gray;
+}
+
 function tagPrefix(tag: string): string {
-  return gray(`[${tag}]`);
+  const color = tagColor(tag);
+  return bold(color(`[${tag}]`));
 }
 
 export const logger = {
@@ -21,13 +43,13 @@ export const logger = {
     console.log(`${tagPrefix(tag)} ${message}`);
   },
   success(tag: string, message: string) {
-    console.log(`${tagPrefix(tag)} ${green(message)}`);
+    console.log(`${tagPrefix(tag)} ${green(`✅ ${message}`)}`);
   },
   warn(tag: string, message: string) {
-    console.log(`${tagPrefix(tag)} ${yellow(message)}`);
+    console.log(`${tagPrefix(tag)} ${yellow(`⚠️ ${message}`)}`);
   },
   error(tag: string, message: string) {
-    console.log(`${tagPrefix(tag)} ${red(message)}`);
+    console.log(`${tagPrefix(tag)} ${red(`❌ ${message}`)}`);
   },
   debug(tag: string, message: string) {
     if (currentLogLevel === "debug") {

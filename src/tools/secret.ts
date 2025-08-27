@@ -137,6 +137,7 @@ export const listSecretsTool = tool({
     const names = listSecretNames();
     const placeholders = names.map((n) => `{{secret.${n}}}`);
     const output = { placeholders } as const;
+    logger.info("Tool", `🔐 list_secrets: ${placeholders.length} placeholder(s)`);
     logger.debug("Tool", `list_secrets result: ${stringifySmall({ count: placeholders.length })}`);
     return output;
   },

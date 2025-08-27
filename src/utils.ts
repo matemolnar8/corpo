@@ -9,47 +9,51 @@ export function printModelResult(
   context: string,
 ): void {
   // Always log basic info
-  logger.info(
-    context,
-    `toolCalls: ${result.toolCalls.length}, toolResults: ${result.toolResults.length}, tokens in: ${result.totalUsage.inputTokens}, tokens out: ${result.totalUsage.outputTokens}, total tokens: ${result.totalUsage.totalTokens}`,
-  );
+  if (getLogLevel() === "default") {
+    logger.info(
+      context,
+      `Tokens in/out/total: ${result.totalUsage.inputTokens}/${result.totalUsage.outputTokens}/${result.totalUsage.totalTokens}`,
+    );
+  } else {
+    logger.info(
+      context,
+      `toolCalls: ${result.toolCalls.length}, toolResults: ${result.toolResults.length}, tokens in: ${result.totalUsage.inputTokens}, tokens out: ${result.totalUsage.outputTokens}, total tokens: ${result.totalUsage.totalTokens}`,
+    );
+  }
 
   // Print tool calls from result.steps
   if (result.steps && result.steps.length > 0) {
-    logger.info(context, `Steps executed: ${result.steps.length}`);
-    for (let stepIndex = 0; stepIndex < result.steps.length; stepIndex++) {
-      const step = result.steps[stepIndex];
-      logger.info(context, `Step ${stepIndex + 1}:`);
-      if (step.toolCalls && step.toolCalls.length > 0) {
-        for (
-          let toolIndex = 0;
-          toolIndex < step.toolCalls.length;
-          toolIndex++
-        ) {
-          const tc = step.toolCalls[toolIndex];
-          const tr = step.toolResults?.find(
-            (r) => r.toolCallId === tc.toolCallId,
-          );
-
-          // Default level: just tool name and args in one line
-          if (getLogLevel() === "default") {
-            const args = stringifySmall(tc.input);
-            logger.info(context, `  Tool ${toolIndex + 1}/${step.toolCalls.length}: ${tc.toolName}(${args})`);
-          } else {
-            // Debug level: detailed logging
+    if (getLogLevel() === "default") {
+      // Compact per-step summary in default mode
+      const stepSummaries: string[] = [];
+      for (let i = 0; i < result.steps.length; i++) {
+        const step = result.steps[i];
+        const toolNames = (step.toolCalls ?? []).map((tc) => tc.toolName);
+        const summary = toolNames.length > 0 ? `${i + 1}: ${toolNames.join(", ")}` : `${i + 1}: -`;
+        stepSummaries.push(summary);
+      }
+      logger.info(context, `Steps: ${stepSummaries.join(" | ")}`);
+    } else {
+      // Detailed in debug mode
+      logger.info(context, `Steps executed: ${result.steps.length}`);
+      for (let stepIndex = 0; stepIndex < result.steps.length; stepIndex++) {
+        const step = result.steps[stepIndex];
+        logger.info(context, `Step ${stepIndex + 1}:`);
+        if (step.toolCalls && step.toolCalls.length > 0) {
+          for (let toolIndex = 0; toolIndex < step.toolCalls.length; toolIndex++) {
+            const tc = step.toolCalls[toolIndex];
+            const tr = step.toolResults?.find((r) => r.toolCallId === tc.toolCallId);
             logger.debug(context, `  Tool ${toolIndex + 1}/${step.toolCalls.length}: ${tc.toolName}`);
             logger.debug(context, `  Input: ${stringifySmall(tc.input)}`);
             if (tr) {
               logger.debug(context, `  Result: ${stringifySmall(tr.output)}`);
             }
           }
+        } else {
+          logger.info(context, "  No tools called in this step");
         }
-      } else {
-        logger.info(context, "  No tools called in this step");
       }
     }
-  } else {
-    logger.info(context, "No tools were called.");
   }
 
   logger.debug(context, `finishReason: ${result.finishReason ?? "unknown"}`);
@@ -59,8 +63,12 @@ export function printModelResult(
 
   // Always log final text
   if ((result.text ?? "").trim()) {
-    logger.info(context, "Model final text:");
-    console.log((result.text ?? "").trim());
+    if (getLogLevel() === "default") {
+      logger.info(context, (result.text ?? "").trim());
+    } else {
+      logger.info(context, "Model final text:");
+      console.log((result.text ?? "").trim());
+    }
   }
 }
 

@@ -75,6 +75,7 @@ export class PlaywrightMCP {
     args: Record<string, unknown>,
     options: { includeSnapshot?: boolean } = {},
   ) {
+    const startTimeMs = Date.now();
     const originalPreviousToolPromise = this.previousToolPromise;
     const previousToolDeferred = deferPromise<void>();
     this.previousToolPromise = previousToolDeferred.promise;
@@ -90,18 +91,28 @@ export class PlaywrightMCP {
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     let result;
-    if (name === "browser_snapshot_and_save") {
-      result = await this.snapshotAndSaveTool.execute!(args as { variable: string }, {
-        messages: [],
-        toolCallId: crypto.randomUUID(),
-      });
-    } else {
-      result = await this.callMcpTool(name, args, options);
+    try {
+      if (name === "browser_snapshot_and_save") {
+        result = await this.snapshotAndSaveTool.execute!(args as { variable: string }, {
+          messages: [],
+          toolCallId: crypto.randomUUID(),
+        });
+      } else {
+        result = await this.callMcpTool(name, args, options);
+      }
+      const durationMs = Date.now() - startTimeMs;
+      logger.info("MCP", `⏱️ Tool '${name}' in ${durationMs}ms with args: ${stringifySmall(args)}`);
+      return result;
+    } catch (err) {
+      const durationMs = Date.now() - startTimeMs;
+      logger.error(
+        "MCP",
+        `⏱️ Tool '${name}' failed after ${durationMs}ms with args: ${stringifySmall(args)}: ${String(err)}`,
+      );
+      throw err;
+    } finally {
+      previousToolDeferred.resolve();
     }
-
-    previousToolDeferred.resolve();
-
-    return result;
   }
 
   async callMcpTool(
@@ -154,7 +165,9 @@ export class PlaywrightMCP {
     }),
     execute: async (options) => {
       logger.debug("Tool", `snapshotAndSave args: ${stringifySmall(options)}`);
+      const startTimeMs = Date.now();
       const { variable } = options;
+      logger.info("Tool", `📸 snapshot_and_save: saving snapshot to variable '${variable}'`);
       const result = await this.callMcpTool("browser_snapshot", {}, { includeSnapshot: true });
 
       const textContent = result.content.find((content) => content.type === "text");
@@ -167,16 +180,20 @@ export class PlaywrightMCP {
       const snapshotWithoutYaml = snapshot?.replace(/```yaml([\s\S]*?)```/g, "$1");
 
       if (!snapshotWithoutYaml) {
-        logger.warn("Tool", "Couldn't create snapshot.");
+        logger.warn("Tool", "📸 Couldn't create snapshot.");
         const output = { success: false, reason: "Couldn't create snapshot." } as const;
         logger.debug("Tool", `snapshotAndSave result: ${stringifySmall(output)}`);
+        const durationMs = Date.now() - startTimeMs;
+        logger.info("Tool", `snapshot_and_save failed after ${durationMs}ms`);
         return output;
       }
 
       setVariable(variable, snapshotWithoutYaml);
-      logger.info("Tool", `Snapshot saved to variable '${variable}'`);
+      logger.info("Tool", `📸 Snapshot saved to variable '${variable}'`);
       const output = { success: true } as const;
       logger.debug("Tool", `snapshotAndSave result: ${stringifySmall(output)}`);
+      const durationMs = Date.now() - startTimeMs;
+      logger.info("Tool", `📸 snapshot_and_save finished in ${durationMs}ms`);
       return output;
     },
   });

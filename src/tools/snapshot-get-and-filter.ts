@@ -239,6 +239,8 @@ export const snapshotGetAndFilterTool = tool({
     } catch {
       __argsStr = String({ variable, filter, includeSubtree, mode, maxResults, storeInVariable });
     }
+    const __start = Date.now();
+    logger.info("Tool", `🔎 snapshot_get_and_filter: variable='${variable}', mode='${mode}'`);
     logger.debug("Tool", `snapshot_get_and_filter args: ${__argsStr}`);
     const raw = getVariable(variable);
     if (!raw) {
@@ -294,6 +296,8 @@ export const snapshotGetAndFilterTool = tool({
       "Tool",
       `snapshot_get_and_filter result: ${JSON.stringify({ success: true, count: matches.length, json })}`,
     );
+    const __dur = Date.now() - __start;
+    logger.info("Tool", `🔎 snapshot_get_and_filter: ${matches.length} match(es) in ${__dur}ms`);
     return { success: true, count: matches.length, json };
   },
 });
