@@ -7,6 +7,8 @@ import type { ImageContent, TextContent } from "@modelcontextprotocol/sdk/types.
 import { setVariable } from "../variable.ts";
 import { replaceSecretsInArgsWithTracking, replaceSecretsInResultAllowed } from "../secret.ts";
 import { deferPromise } from "../../utils.ts";
+import { resolvePlaywrightToolDescription, withIncludeSnapshotDescription } from "./playwright-utils.ts";
+import { PLAYWRIGHT_ALLOWED_TOOL_NAMES } from "./playwright-tools.ts";
 
 const PLAYWRIGHT_MCP = {
   command: "npx",
@@ -17,19 +19,6 @@ export type PlaywrightToolOutput = { content: (TextContent | ImageContent)[]; is
 
 export class PlaywrightMCP {
   private client?: MCPClient;
-
-  // Allowed tool names for browser automation
-  private static readonly ALLOWED_TOOL_NAMES: ReadonlyArray<string> = [
-    "browser_navigate",
-    "browser_click",
-    "browser_type",
-    "browser_wait_for",
-    "browser_select_option",
-    "browser_tab_list",
-    "browser_tab_select",
-    "browser_evaluate",
-    // "browser_snapshot",
-  ];
 
   constructor() {}
 
@@ -54,8 +43,17 @@ export class PlaywrightMCP {
   }
 
   private filterAllowedTools(tools: MCPTool[]): MCPTool[] {
-    const allowed = new Set(PlaywrightMCP.ALLOWED_TOOL_NAMES);
-    return tools.filter((t) => allowed.has(t.name));
+    const allowed = new Set(PLAYWRIGHT_ALLOWED_TOOL_NAMES);
+
+    // assert that every tool name in allowed is in tools
+    for (const name of allowed) {
+      if (!tools.some((t) => t.name === name)) {
+        throw new Error(`Tool '${name}' is not provided by Playwright MCP`);
+      }
+    }
+
+    const filtered = tools.filter((t) => allowed.has(t.name));
+    return filtered;
   }
 
   async listAllTools(): Promise<MCPTool[]> {
@@ -131,25 +129,9 @@ export class PlaywrightMCP {
     const map: Record<string, Tool> = {};
 
     for (const t of tools) {
-      const baseProps = t.inputSchema?.properties ?? {};
-      const baseRequired = t.inputSchema?.required ?? [];
-      const inputSchema = jsonSchema(
-        {
-          type: "object",
-          properties: {
-            ...baseProps,
-            includeSnapshot: {
-              type: "boolean",
-              description: "If true, include raw YAML snapshot/image content in results.",
-              default: false,
-            },
-          },
-          required: baseRequired,
-          additionalProperties: true,
-        } as const,
-      );
+      const inputSchema = jsonSchema(withIncludeSnapshotDescription(t.inputSchema));
       map[t.name] = tool({
-        description: t.description ?? `MCP tool ${t.name}`,
+        description: resolvePlaywrightToolDescription(t.name, t.description ?? t.name),
         inputSchema,
         execute: (options: unknown) => {
           const { includeSnapshot, ...rest } = (options as Record<string, unknown>) ?? {};
@@ -209,7 +191,8 @@ export class PlaywrightMCP {
       const filteredContent: (TextContent | ImageContent)[] = [];
       for (const c of result.content) {
         if (c.type === "text") {
-          const withoutYaml = c.text.replace(/```yaml[\s\S]*?```/g, "").trim();
+          const withoutPageSnapshotHeader = c.text.replace(/^- Page Snapshot:/, "");
+          const withoutYaml = withoutPageSnapshotHeader.replace(/```yaml[\s\S]*?```/g, "").trim();
           if (withoutYaml) {
             filteredContent.push({ type: "text", text: withoutYaml });
           }
