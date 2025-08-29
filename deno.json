@@ -1,7 +1,7 @@
 {
   "tasks": {
     "corpo": "deno run --env-file --allow-net --allow-env --allow-run=npx --allow-write=./workflows --allow-read=./workflows,./secrets.json src/index.ts",
-    "debug": "deno run --inspect --env-file --allow-net --allow-env --allow-run=npx --allow-write=./workflows --allow-read=./workflows src/index.ts",
+    "debug": "deno run --inspect --env-file --allow-net --allow-env --allow-run=npx --allow-write=./workflows --allow-read=./workflows,./secrets.json src/index.ts",
     "test": "deno test --env-file --allow-net --allow-env --allow-run=npx --allow-write=./workflows --allow-read=./workflows,./secrets.json,./resources,./src",
     "run": "deno task corpo run",
     "record": "deno task corpo record",

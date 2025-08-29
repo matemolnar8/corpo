@@ -40,20 +40,20 @@ function tagPrefix(tag: string): string {
 
 export const logger = {
   info(tag: string, message: string) {
-    console.log(`${tagPrefix(tag)} ${message}`);
+    Deno.stdout.writeSync(new TextEncoder().encode(`\r${tagPrefix(tag)} ${message}\n`));
   },
   success(tag: string, message: string) {
-    console.log(`${tagPrefix(tag)} ${green(`✅ ${message}`)}`);
+    Deno.stdout.writeSync(new TextEncoder().encode(`\r${tagPrefix(tag)} ${green(`✅ ${message}`)}\n`));
   },
   warn(tag: string, message: string) {
-    console.log(`${tagPrefix(tag)} ${yellow(`⚠️ ${message}`)}`);
+    Deno.stdout.writeSync(new TextEncoder().encode(`\r${tagPrefix(tag)} ${yellow(`⚠️ ${message}`)}\n`));
   },
   error(tag: string, message: string) {
-    console.log(`${tagPrefix(tag)} ${red(`❌ ${message}`)}`);
+    Deno.stdout.writeSync(new TextEncoder().encode(`\r${tagPrefix(tag)} ${red(`❌ ${message}`)}\n`));
   },
   debug(tag: string, message: string) {
     if (currentLogLevel === "debug") {
-      console.log(`${tagPrefix(tag)} ${gray(message)}`);
+      Deno.stdout.writeSync(new TextEncoder().encode(`\r${tagPrefix(tag)} ${gray(message)}\n`));
     }
   },
 } as const;
@@ -66,3 +66,56 @@ export function stringifySmall(v: unknown): string {
     return String(v);
   }
 }
+
+export function createSpinner() {
+  const frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+
+  let i = 0;
+  let interval: number | null = null;
+  let textQueue: string[] = [];
+  let running = false;
+  return {
+    start() {
+      running = true;
+      textQueue = [];
+      this.write();
+      this.resume();
+    },
+    addText(text: string) {
+      textQueue.unshift(text);
+      this.write();
+    },
+    removeText() {
+      textQueue.shift();
+    },
+    pause() {
+      if (interval) {
+        clearInterval(interval);
+      }
+    },
+    write() {
+      if (!running) {
+        throw new Error("Spinner is not running. Text queue: " + textQueue.join(", "));
+      }
+      const text = textQueue.at(0) ?? "";
+      return Deno.stdout.writeSync(new TextEncoder().encode(`\x1b[2K\r${frames[i++ % frames.length]} ${text}`));
+    },
+    resume() {
+      if (!running) {
+        return;
+      }
+      interval = setInterval(() => {
+        this.write();
+      }, 100);
+    },
+    stop() {
+      if (interval) {
+        clearInterval(interval);
+      }
+      Deno.stdout.writeSync(new TextEncoder().encode("\x1b[2K\r"));
+      running = false;
+    },
+  };
+}
+
+export const spinner = createSpinner();

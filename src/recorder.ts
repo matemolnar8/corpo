@@ -2,7 +2,7 @@ import { generateText } from "ai";
 import { saveWorkflow, Workflow, WorkflowStep } from "./workflows.ts";
 import { PlaywrightMCP } from "./tools/mcp/playwright-mcp.ts";
 import { accumulateTokenUsage, initTokenUsageSummary, logTokenUsageSummary, printModelResult } from "./utils.ts";
-import { logger } from "./log.ts";
+import { logger, spinner } from "./log.ts";
 import { userInputTool } from "./tools/user-input.ts";
 import { listVariablesTool, resetVariables, retrieveVariableTool, storeVariableTool } from "./tools/variable.ts";
 import { snapshotGetAndFilterTool } from "./tools/snapshot-get-and-filter.ts";
@@ -62,6 +62,7 @@ export class WorkflowRecorder {
       // Per-step refinement loop: plan -> execute -> validate -> (maybe refine and re-run)
       let accepted = false;
       let refinement: string | undefined = undefined;
+      spinner.start();
       while (!accepted) {
         const prompt =
           `You are a helpful browser automation assistant. You are recording a browser automation workflow. Use the available tools to perform the user's step, until the step is fully completed.
@@ -102,6 +103,7 @@ ${refinement ? `Refinement: ${refinement}` : ""}
         logger.debug("Recorder", "About to run model for this step with the following prompt:");
         logger.debug("Recorder", prompt);
 
+        spinner.addText("Thinking...");
         const result = await generateText({
           model: model,
           tools: allTools,
@@ -156,6 +158,7 @@ ${refinement ? `Refinement: ${refinement}` : ""}
           accepted = true;
         }
       }
+      spinner.stop();
     }
 
     const workflow: Workflow = {

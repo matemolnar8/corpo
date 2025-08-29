@@ -2,7 +2,7 @@ import { Tool, tool } from "ai";
 import { z } from "zod";
 import { MCPClient, MCPTool } from "./mcp-client.ts";
 import { jsonSchema } from "@ai-sdk/provider-utils";
-import { logger, stringifySmall } from "../../log.ts";
+import { logger, spinner, stringifySmall } from "../../log.ts";
 import type { ImageContent, TextContent } from "@modelcontextprotocol/sdk/types.js";
 import { setVariable } from "../variable.ts";
 import { replaceSecretsInArgsWithTracking, replaceSecretsInResultAllowed } from "../secret.ts";
@@ -75,6 +75,7 @@ export class PlaywrightMCP {
     args: Record<string, unknown>,
     options: { includeSnapshot?: boolean } = {},
   ) {
+    spinner.addText(`Running Playwright tool '${name}'...`);
     const startTimeMs = Date.now();
     const originalPreviousToolPromise = this.previousToolPromise;
     const previousToolDeferred = deferPromise<void>();
@@ -112,6 +113,7 @@ export class PlaywrightMCP {
       throw err;
     } finally {
       previousToolDeferred.resolve();
+      spinner.removeText();
     }
   }
 

@@ -2,7 +2,7 @@ import { generateText } from "ai";
 import { listWorkflows, loadWorkflow } from "./workflows.ts";
 import { PlaywrightMCP } from "./tools/mcp/playwright-mcp.ts";
 import { accumulateTokenUsage, initTokenUsageSummary, logTokenUsageSummary, printModelResult } from "./utils.ts";
-import { logger } from "./log.ts";
+import { logger, spinner } from "./log.ts";
 import { userInputTool } from "./tools/user-input.ts";
 import { listVariablesTool, resetVariables, retrieveVariableTool, storeVariableTool } from "./tools/variable.ts";
 import { snapshotGetAndFilterTool } from "./tools/snapshot-get-and-filter.ts";
@@ -52,6 +52,8 @@ export class WorkflowRunner {
       let attempts = 0;
       const maxAttempts = autoMode ? 3 : Infinity;
 
+      spinner.start();
+      spinner.addText(`Running step ${i + 1}...`);
       while (!stepFinished && attempts < maxAttempts) {
         attempts++;
         if (autoMode) {
@@ -94,6 +96,7 @@ ${refinement ? `Refinement: ${refinement}` : ""}
         logger.debug("Runner", "About to run model for this step with the following prompt:");
         logger.debug("Runner", prompt);
 
+        spinner.addText("Thinking...");
         const result = await generateText({
           model: model,
           tools: allTools,
@@ -146,6 +149,7 @@ ${refinement ? `Refinement: ${refinement}` : ""}
           }
         }
       }
+      spinner.stop();
     }
 
     logTokenUsageSummary("Runner", tokenSummary);

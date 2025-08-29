@@ -67,7 +67,7 @@ export function printModelResult(
       logger.info(context, (result.text ?? "").trim());
     } else {
       logger.info(context, "Model final text:");
-      console.log((result.text ?? "").trim());
+      logger.info(context, (result.text ?? "").trim());
     }
   }
 }

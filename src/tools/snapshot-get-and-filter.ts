@@ -2,7 +2,7 @@ import { tool } from "ai";
 import z from "zod";
 import { parse } from "@std/yaml";
 import { getVariable, setVariable } from "./variable.ts";
-import { logger } from "../log.ts";
+import { logger, spinner } from "../log.ts";
 
 type TextMatch =
   | { equals: string }
@@ -231,73 +231,78 @@ export const snapshotGetAndFilterTool = tool({
   inputSchema: snapshotGetAndFilterInputSchema,
   outputSchema: snapshotGetAndFilterOutputSchema,
   execute: ({ variable, filter, includeSubtree, mode, maxResults, storeInVariable }) => {
-    const MAX_JSON_CHARS = 30_000;
-    // Start log
-    let __argsStr = "";
+    spinner.addText("Running snapshot_get_and_filter...");
     try {
-      __argsStr = JSON.stringify({ variable, filter, includeSubtree, mode, maxResults, storeInVariable });
-    } catch {
-      __argsStr = String({ variable, filter, includeSubtree, mode, maxResults, storeInVariable });
-    }
-    const __start = Date.now();
-    logger.info("Tool", `🔎 snapshot_get_and_filter: variable='${variable}', mode='${mode}'`);
-    logger.debug("Tool", `snapshot_get_and_filter args: ${__argsStr}`);
-    const raw = getVariable(variable);
-    if (!raw) {
+      const MAX_JSON_CHARS = 30_000;
+      // Start log
+      let __argsStr = "";
+      try {
+        __argsStr = JSON.stringify({ variable, filter, includeSubtree, mode, maxResults, storeInVariable });
+      } catch {
+        __argsStr = String({ variable, filter, includeSubtree, mode, maxResults, storeInVariable });
+      }
+      const __start = Date.now();
+      logger.info("Tool", `🔎 snapshot_get_and_filter: variable='${variable}', mode='${mode}'`);
+      logger.debug("Tool", `snapshot_get_and_filter args: ${__argsStr}`);
+      const raw = getVariable(variable);
+      if (!raw) {
+        logger.debug(
+          "Tool",
+          `snapshot_get_and_filter result: ${
+            JSON.stringify({ success: false, count: 0, reason: `Variable '${variable}' not found` })
+          }`,
+        );
+        return { success: false, count: 0, reason: `Variable '${variable}' not found` };
+      }
+
+      let parsed: unknown;
+      try {
+        parsed = parse(raw);
+      } catch (err) {
+        logger.debug(
+          "Tool",
+          `snapshot_get_and_filter result: ${
+            JSON.stringify({ success: false, count: 0, reason: `Failed to parse YAML: ${(err as Error).message}` })
+          }`,
+        );
+        return { success: false, count: 0, reason: `Failed to parse YAML: ${(err as Error).message}` };
+      }
+
+      const rootNodes = buildNodes(parsed);
+      const matches = findMatches(rootNodes, {
+        role: filter.role,
+        text: filter.text,
+        attributes: filter.attributes,
+        includeSubtree,
+        mode,
+        maxResults,
+      });
+
+      const json = JSON.stringify(matches, null, 2);
+
+      // Enforce size limit to encourage narrower filters
+      if (json.length > MAX_JSON_CHARS) {
+        const reason = `Filtered result too large (${json.length} > ${MAX_JSON_CHARS} chars). ` +
+          "Narrow your filter: restrict 'role'/'text'/'attributes', avoid 'includeSubtree' unless required, or set 'maxResults'.";
+        logger.debug(
+          "Tool",
+          `snapshot_get_and_filter result: ${JSON.stringify({ success: false, count: matches.length, reason })}`,
+        );
+        return { success: false, count: matches.length, reason };
+      }
+
+      if (storeInVariable) {
+        setVariable(storeInVariable, json);
+      }
       logger.debug(
         "Tool",
-        `snapshot_get_and_filter result: ${
-          JSON.stringify({ success: false, count: 0, reason: `Variable '${variable}' not found` })
-        }`,
+        `snapshot_get_and_filter result: ${JSON.stringify({ success: true, count: matches.length, json })}`,
       );
-      return { success: false, count: 0, reason: `Variable '${variable}' not found` };
+      const __dur = Date.now() - __start;
+      logger.info("Tool", `🔎 snapshot_get_and_filter: ${matches.length} match(es) in ${__dur}ms`);
+      return { success: true, count: matches.length, json };
+    } finally {
+      spinner.removeText();
     }
-
-    let parsed: unknown;
-    try {
-      parsed = parse(raw);
-    } catch (err) {
-      logger.debug(
-        "Tool",
-        `snapshot_get_and_filter result: ${
-          JSON.stringify({ success: false, count: 0, reason: `Failed to parse YAML: ${(err as Error).message}` })
-        }`,
-      );
-      return { success: false, count: 0, reason: `Failed to parse YAML: ${(err as Error).message}` };
-    }
-
-    const rootNodes = buildNodes(parsed);
-    const matches = findMatches(rootNodes, {
-      role: filter.role,
-      text: filter.text,
-      attributes: filter.attributes,
-      includeSubtree,
-      mode,
-      maxResults,
-    });
-
-    const json = JSON.stringify(matches, null, 2);
-
-    // Enforce size limit to encourage narrower filters
-    if (json.length > MAX_JSON_CHARS) {
-      const reason = `Filtered result too large (${json.length} > ${MAX_JSON_CHARS} chars). ` +
-        "Narrow your filter: restrict 'role'/'text'/'attributes', avoid 'includeSubtree' unless required, or set 'maxResults'.";
-      logger.debug(
-        "Tool",
-        `snapshot_get_and_filter result: ${JSON.stringify({ success: false, count: matches.length, reason })}`,
-      );
-      return { success: false, count: matches.length, reason };
-    }
-
-    if (storeInVariable) {
-      setVariable(storeInVariable, json);
-    }
-    logger.debug(
-      "Tool",
-      `snapshot_get_and_filter result: ${JSON.stringify({ success: true, count: matches.length, json })}`,
-    );
-    const __dur = Date.now() - __start;
-    logger.info("Tool", `🔎 snapshot_get_and_filter: ${matches.length} match(es) in ${__dur}ms`);
-    return { success: true, count: matches.length, json };
   },
 });
