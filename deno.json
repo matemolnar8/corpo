@@ -11,20 +11,20 @@
     "serve-evals": "deno run --allow-net --allow-read=./evals evals/server.ts"
   },
   "imports": {
-    "@std/cli": "jsr:@std/cli@^1.0.7",
-    "@ai-sdk/google": "npm:@ai-sdk/google@^2.0.7",
-    "@ai-sdk/openai": "npm:@ai-sdk/openai@^2.0.16",
-    "@ai-sdk/provider-utils": "npm:@ai-sdk/provider-utils@^3.0.4",
-    "@modelcontextprotocol/sdk": "npm:@modelcontextprotocol/sdk@^1.17.3",
+    "@std/cli": "jsr:@std/cli@^1.0.21",
+    "@ai-sdk/google": "npm:@ai-sdk/google@^2.0.11",
+    "@ai-sdk/openai": "npm:@ai-sdk/openai@^2.0.23",
+    "@ai-sdk/provider-utils": "npm:@ai-sdk/provider-utils@^3.0.7",
+    "@modelcontextprotocol/sdk": "npm:@modelcontextprotocol/sdk@^1.17.4",
     "@openrouter/ai-sdk-provider": "npm:@openrouter/ai-sdk-provider@^1.1.2",
     "@std/expect": "jsr:@std/expect@^1.0.17",
     "@std/fmt": "jsr:@std/fmt@^1.0.8",
     "@std/path": "jsr:@std/path@^1.1.2",
     "@std/testing": "jsr:@std/testing@^1.0.15",
     "@std/yaml": "jsr:@std/yaml@^1.0.9",
-    "ai": "npm:ai@^5.0.17",
+    "ai": "npm:ai@^5.0.28",
     "commander": "npm:commander@^14.0.0",
-    "zod": "npm:zod@^4.0.17"
+    "zod": "npm:zod@^4.1.5"
   },
   "fmt": {
     "lineWidth": 120
