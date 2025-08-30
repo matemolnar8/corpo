@@ -1,5 +1,5 @@
 ---
-alwaysApply: true
+alwaysApply: false
 globs: *.ts,*.tsx
 description: Always run type check and tests after TypeScript changes using project tasks
 ---

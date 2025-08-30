@@ -1,0 +1,9 @@
+---
+description: Run linter for every task affecting code
+globs: *.ts,*.tsx
+alwaysApply: false
+---
+
+You must run the linter and fix any issues caused by it.
+
+`deno lint` runs the linter. You can fix auto-fixable issues with `deno lint --fix`

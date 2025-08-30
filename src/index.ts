@@ -43,8 +43,12 @@ program
   .action(async (name: string | undefined) => {
     const { mcp } = await setup();
     const runner = new WorkflowRunner(mcp);
-    await runner.run(name, false);
-    await exit();
+    try {
+      await runner.run(name, false);
+      await exit();
+    } catch (_) {
+      await exit(1);
+    }
   });
 
 program
@@ -54,8 +58,12 @@ program
   .action(async (name: string | undefined) => {
     const { mcp } = await setup();
     const runner = new WorkflowRunner(mcp);
-    await runner.run(name, true);
-    await exit();
+    try {
+      await runner.run(name, true);
+      await exit();
+    } catch (_) {
+      await exit(1);
+    }
   });
 
 Deno.addSignalListener("SIGINT", async () => {

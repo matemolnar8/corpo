@@ -73,13 +73,14 @@ export class WorkflowRunner {
 
       spinner.start();
       spinner.addText(`Running step ${i + 1}...`);
-      while (!stepFinished && attempts < maxAttempts) {
-        attempts++;
-        if (autoMode) {
-          logger.info("Runner", `[Auto Mode] Attempt ${attempts}/${maxAttempts}`);
-        }
+      try {
+        while (!stepFinished && attempts < maxAttempts) {
+          attempts++;
+          if (autoMode) {
+            logger.info("Runner", `[Auto Mode] Attempt ${attempts}/${maxAttempts}`);
+          }
 
-        const prompt = `Reproduce the following browser automation step using the available tools.
+          const prompt = `Reproduce the following browser automation step using the available tools.
 
 Rules:
 - Keep calling tools until the step is fully completed; do not stop after a single call.
@@ -112,74 +113,71 @@ ${refinement ? `Refinement: ${refinement}` : ""}
 \`\`\`
 `;
 
-        logger.debug("Runner", "About to run model for this step with the following prompt:");
-        logger.debug("Runner", prompt);
+          logger.debug("Runner", "About to run model for this step with the following prompt:");
+          logger.debug("Runner", prompt);
 
-        spinner.addText("Thinking...");
-        const result = await generateText({
-          model: model,
-          tools: allTools,
-          prompt,
-          stopWhen,
-        });
-
-        printModelResult(result, "Runner");
-        accumulateTokenUsage(tokenSummary, result);
-
-        if (autoMode) {
-          // Auto mode logic: assume step is complete if tools were called or "DONE" is output
-          const rawText = (result.text ?? "").trim();
-          const outputText = rawText.toLowerCase();
-          if (outputText.includes("done")) {
-            stepFinished = true;
-            if (i === wf.steps.length - 1 && rawText) {
-              finalStepText = rawText;
-            }
-            logger.success("Runner", `[Auto Mode] Step ${i + 1} completed successfully`);
-          } else if (attempts >= maxAttempts) {
-            logger.error(
-              "Runner",
-              `[Auto Mode] Step ${i + 1} failed after ${maxAttempts} attempts, continuing to next step`,
-            );
-            stepFinished = true;
-            if (i === wf.steps.length - 1 && (result.text ?? "").trim()) {
-              finalStepText = (result.text ?? "").trim();
-            }
-          } else {
-            logger.warn("Runner", `[Auto Mode] Step ${i + 1} incomplete, retrying...`);
-            // Add a small delay between attempts
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-          }
-        } else {
-          // Interactive mode logic: ask user for decision
-          const decision = select({
-            message: "Is this step finished?",
-            choices: [
-              { name: "Continue to next step", value: "continue" },
-              { name: "Re-run with change instructions", value: "refine" },
-              { name: "Abort workflow", value: "abort" },
-            ] as const,
-            defaultIndex: 0,
+          spinner.addText("Thinking...");
+          const result = await generateText({
+            model: model,
+            tools: allTools,
+            prompt,
+            stopWhen,
           });
 
-          if (decision === "continue") {
-            stepFinished = true;
+          printModelResult(result, "Runner");
+          accumulateTokenUsage(tokenSummary, result);
+
+          if (autoMode) {
+            // Auto mode logic: assume step is complete only if "DONE" is output
             const rawText = (result.text ?? "").trim();
-            if (i === wf.steps.length - 1 && rawText) {
-              finalStepText = rawText;
+            const outputText = rawText.toLowerCase();
+            if (outputText.includes("done")) {
+              stepFinished = true;
+              if (i === wf.steps.length - 1 && rawText) {
+                finalStepText = rawText;
+              }
+              logger.success("Runner", `[Auto Mode] Step ${i + 1} completed successfully`);
+            } else if (attempts >= maxAttempts) {
+              const message = `[Auto Mode] Step ${i + 1} failed after ${maxAttempts} attempts`;
+              logger.error("Runner", message);
+              throw new Error(message);
+            } else {
+              logger.warn("Runner", `[Auto Mode] Step ${i + 1} incomplete, retrying...`);
+              // Add a small delay between attempts
+              await new Promise((resolve) => setTimeout(resolve, 1000));
             }
-          } else if (decision === "refine") {
-            const r = input({
-              message: "Describe changes to apply and re-run:",
-              default: refinement ?? "",
-            });
-            refinement = r || undefined;
           } else {
-            throw new Error("Workflow aborted by user");
+            // Interactive mode logic: ask user for decision
+            const decision = select({
+              message: "Is this step finished?",
+              choices: [
+                { name: "Continue to next step", value: "continue" },
+                { name: "Re-run with change instructions", value: "refine" },
+                { name: "Abort workflow", value: "abort" },
+              ] as const,
+              defaultIndex: 0,
+            });
+
+            if (decision === "continue") {
+              stepFinished = true;
+              const rawText = (result.text ?? "").trim();
+              if (i === wf.steps.length - 1 && rawText) {
+                finalStepText = rawText;
+              }
+            } else if (decision === "refine") {
+              const r = input({
+                message: "Describe changes to apply and re-run:",
+                default: refinement ?? "",
+              });
+              refinement = r || undefined;
+            } else {
+              throw new Error("Workflow aborted by user");
+            }
           }
         }
+      } finally {
+        spinner.stop();
       }
-      spinner.stop();
       attemptsPerStep.push(attempts);
     }
 
