@@ -11,6 +11,7 @@
     "serve-evals": "deno run --allow-net --allow-read=./evals evals/server.ts"
   },
   "imports": {
+    "@std/cli": "jsr:@std/cli@^1.0.7",
     "@ai-sdk/google": "npm:@ai-sdk/google@^2.0.7",
     "@ai-sdk/openai": "npm:@ai-sdk/openai@^2.0.16",
     "@ai-sdk/provider-utils": "npm:@ai-sdk/provider-utils@^3.0.4",

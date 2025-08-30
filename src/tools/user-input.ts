@@ -16,6 +16,9 @@ export const userInputTool = tool({
   inputSchema: userInputInputSchema,
   outputSchema: userInputOutputSchema,
   execute: ({ question }) => {
+    if (Deno.env.get("CORPO_EVAL_MODE") === "1") {
+      throw new Error("user_input is not allowed during evals");
+    }
     spinner.pause();
     logger.info("Tool", `❓ user_input: prompting user with question: ${stringifySmall({ question })}`);
     logger.debug("Tool", `user_input args: ${stringifySmall({ question })}`);

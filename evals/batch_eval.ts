@@ -1,38 +1,27 @@
-// Batch eval runner: runs a specific eval across a hardcoded list of models by
-// spawning the single-eval runner in a fresh Deno process per model.
+import { parseArgs } from "@std/cli/parse-args";
 
 // Edit this array to control which models are evaluated.
 const MODELS: string[] = [
+  "openai/gpt-oss-20b",
   "google/gemini-2.5-flash",
-  "anthropic/claude-3.7-sonnet",
+  "anthropic/claude-4-sonnet",
+  "anthropic/claude-3.5-haiku",
   "openai/gpt-4.1-mini",
   "openai/gpt-oss-120b",
-  "openai/gpt-5-nano",
+  "openai/o4-mini",
   "openai/gpt-5-mini",
-  "deepseek/deepseek-chat-v3.1",
-  "moonshotai/kimi-k2",
 ];
 
-type ParsedArgs = {
-  evalName: string;
-  repeat: number;
-};
+type ParsedArgs = { evalName: string; repeat: number };
 
-function parseArgs(): ParsedArgs {
-  const [evalName, ...rest] = Deno.args;
+function parseBatchArgs(): ParsedArgs {
+  const parsed = parseArgs(Deno.args, { string: ["repeat"], alias: { r: "repeat" } });
+  const evalName = (parsed._[0] as string | undefined) ?? undefined;
   if (!evalName) {
     console.error("Usage: deno task batch-eval <evalName> [--repeat=N]");
     Deno.exit(2);
   }
-
-  const args = new Map<string, string>();
-  for (const a of rest) {
-    const m = a.match(/^--([^=]+)=(.*)$/);
-    if (m) args.set(m[1], m[2]);
-  }
-
-  const repeat = Math.max(1, Number.parseInt(args.get("repeat") ?? "1", 10) || 1);
-
+  const repeat = Math.max(1, Number.parseInt((parsed.repeat as string | undefined) ?? "1", 10) || 1);
   return { evalName, repeat };
 }
 
@@ -65,7 +54,7 @@ async function runEvalOnceForModel(evalName: string, modelId: string, repeat: nu
 }
 
 if (import.meta.main) {
-  const { evalName, repeat } = parseArgs();
+  const { evalName, repeat } = parseBatchArgs();
 
   let anyFail = false;
   for (const model of MODELS) {

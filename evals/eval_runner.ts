@@ -1,6 +1,8 @@
 import { modelId } from "../src/model.ts";
 import { WorkflowRunError, WorkflowRunner, WorkflowRunResult } from "../src/runner.ts";
 import { connectPlaywrightMCP, disconnectPlaywrightMCP } from "../src/tools/mcp/playwright-mcp.ts";
+import { exit } from "../src/utils.ts";
+import { parseArgs } from "@std/cli/parse-args";
 
 export type VerifyResult = { ok: true } | { ok: false; reason?: string };
 
@@ -85,18 +87,19 @@ export async function runEval(config: EvalConfig): Promise<EvalRunSummary> {
 
 // CLI entry: deno task eval <evalName> [--repeat=N]
 if (import.meta.main) {
-  const [evalName, ...rest] = Deno.args;
+  const parsed = parseArgs(Deno.args, {
+    string: ["repeat"],
+    alias: { r: "repeat" },
+  });
+  // Mark process as running evals so interactive tools can enforce non-interactive behavior
+  Deno.env.set("CORPO_EVAL_MODE", "1");
+  const evalName = (parsed._[0] as string | undefined) ?? undefined;
   if (!evalName) {
     console.log("Usage: deno task eval <evalName> [--repeat=N]");
-    Deno.exit(2);
+    await exit(2);
+    throw new Error("Unreachable");
   }
-
-  const args = new Map<string, string>();
-  for (const a of rest) {
-    const m = a.match(/^--([^=]+)=(.*)$/);
-    if (m) args.set(m[1], m[2]);
-  }
-  const repeat = Math.max(1, Number.parseInt(args.get("repeat") ?? "1", 10) || 1);
+  const repeat = Math.max(1, Number.parseInt((parsed.repeat as string | undefined) ?? "1", 10) || 1);
 
   const resultsDir = new URL("../evals/results/", import.meta.url);
   await Deno.mkdir(resultsDir, { recursive: true });
@@ -107,10 +110,13 @@ if (import.meta.main) {
   const mod = (await import(moduleUrl)) as unknown as Partial<EvalModule>;
   const candidate = (mod as Partial<{ config: unknown; default: unknown }>).config ??
     (mod as Partial<{ config: unknown; default: unknown }>).default;
+
   if (!isEvalConfig(candidate)) {
     console.error(`Eval '${evalName}' did not export a valid EvalConfig (expected 'config' or default export).`);
-    Deno.exit(2);
+    await exit(2);
+    throw new Error("Unreachable");
   }
+
   const config: EvalConfig = candidate;
 
   let anyFail = false;

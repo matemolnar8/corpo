@@ -6,7 +6,7 @@ export const config: EvalConfig = {
   verify: (result) => {
     const text = result.finalText ?? "";
     const success = text.includes(
-      "Méregdrága hibákat okozhat a rosszul megválasztott motorolaj az utóbbi 15 év benzines autóiban",
+      "Idejönnek az emberek, isznak, drogoznak, és azt gondolják, az élet csak egy buli",
     );
     return success ? { ok: true } : { ok: false, reason: `Unexpected final text: ${result.finalText}` };
   },
