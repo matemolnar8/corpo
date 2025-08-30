@@ -48,6 +48,21 @@ export async function runEval(config: EvalConfig): Promise<EvalRunSummary> {
       modelId,
       timestamp: new Date().toISOString(),
     };
+  } catch (e) {
+    console.error(e);
+    return {
+      pass: false,
+      reason: e instanceof Error ? e.message : "Unknown error",
+      workflowName: config.workflowName,
+      steps: 0,
+      elapsedMs: 0,
+      tokensIn: 0,
+      tokensOut: 0,
+      tokensTotal: 0,
+      attemptsPerStep: [],
+      modelId,
+      timestamp: new Date().toISOString(),
+    };
   } finally {
     await disconnectPlaywrightMCP();
   }
