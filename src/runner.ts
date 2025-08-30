@@ -1,7 +1,13 @@
 import { generateText } from "ai";
 import { listWorkflows, loadWorkflow } from "./workflows.ts";
 import { PlaywrightMCP } from "./tools/mcp/playwright-mcp.ts";
-import { accumulateTokenUsage, initTokenUsageSummary, logTokenUsageSummary, printModelResult } from "./utils.ts";
+import {
+  accumulateTokenUsage,
+  initTokenUsageSummary,
+  logTokenUsageSummary,
+  printModelResult,
+  type TokenUsageSummary,
+} from "./utils.ts";
 import { logger, spinner } from "./log.ts";
 import { userInputTool } from "./tools/user-input.ts";
 import { listVariablesTool, resetVariables, retrieveVariableTool, storeVariableTool } from "./tools/variable.ts";
@@ -12,10 +18,21 @@ import { input, select } from "./cli_prompts.ts";
 import { model, stopWhen } from "./model.ts";
 import { loadSecrets } from "./tools/secret.ts";
 
+export type WorkflowRunResult = {
+  workflowName: string;
+  steps: number;
+  autoMode: boolean;
+  elapsedMs: number;
+  tokenSummary: TokenUsageSummary;
+  finalText?: string;
+  attemptsPerStep: number[];
+};
+
 export class WorkflowRunner {
   constructor(private mcp: PlaywrightMCP) {}
 
-  async run(workflowName?: string, autoMode: boolean = false): Promise<void> {
+  async run(workflowName?: string, autoMode: boolean = false): Promise<WorkflowRunResult> {
+    const startTimeMs = Date.now();
     resetVariables();
     await loadSecrets();
     const name = await this.selectWorkflow(workflowName);
@@ -38,6 +55,7 @@ export class WorkflowRunner {
 
     const tokenSummary = initTokenUsageSummary();
     let finalStepText: string | undefined = undefined;
+    const attemptsPerStep: number[] = [];
 
     for (let i = 0; i < wf.steps.length; i += 1) {
       const step = wf.steps[i];
@@ -162,6 +180,7 @@ ${refinement ? `Refinement: ${refinement}` : ""}
         }
       }
       spinner.stop();
+      attemptsPerStep.push(attempts);
     }
 
     logTokenUsageSummary("Runner", tokenSummary);
@@ -174,6 +193,17 @@ ${refinement ? `Refinement: ${refinement}` : ""}
       logger.info("Runner", (finalStepText ?? "").trim());
       logger.info("Runner", green("--------------------------------"));
     }
+
+    const elapsedMs = Date.now() - startTimeMs;
+    return {
+      workflowName: wf.name,
+      steps: wf.steps.length,
+      autoMode,
+      elapsedMs,
+      tokenSummary,
+      finalText: (finalStepText ?? "").trim() || undefined,
+      attemptsPerStep,
+    };
   }
 
   private async selectWorkflow(pref?: string): Promise<string> {

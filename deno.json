@@ -5,7 +5,9 @@
     "test": "deno test --env-file --allow-net --allow-env --allow-run=npx --allow-write=./workflows --allow-read=./workflows,./secrets.json,./resources,./src",
     "run": "deno task corpo run",
     "record": "deno task corpo record",
-    "run-auto": "deno task corpo run-auto"
+    "run-auto": "deno task corpo run-auto",
+    "eval": "deno run --env-file --allow-net --allow-env --allow-run=npx --allow-read=./workflows,./secrets.json,./evals --allow-write=./workflows,./evals evals/eval_runner.ts",
+    "serve-evals": "deno run --allow-net --allow-read=./evals evals/server.ts"
   },
   "imports": {
     "@ai-sdk/google": "npm:@ai-sdk/google@^2.0.7",

@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Eval Results Viewer</title>
+    <style>
+      body {
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu,
+          Cantarell, Noto Sans, Helvetica, Arial, Apple Color Emoji,
+          Segoe UI Emoji, Segoe UI Symbol;
+        margin: 24px;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      h1 {
+        font-size: 20px;
+        margin: 0;
+      }
+      .controls {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      select,
+      input[type="text"],
+      button {
+        padding: 6px 8px;
+        font-size: 14px;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin-top: 16px;
+      }
+      th,
+      td {
+        border: 1px solid #e5e7eb;
+        padding: 8px;
+        text-align: left;
+      }
+      th {
+        background: #f9fafb;
+        position: sticky;
+        top: 0;
+      }
+      tbody tr:nth-child(odd) {
+        background: #fafafa;
+      }
+      .ok {
+        color: #065f46;
+        background: #ecfdf5;
+        padding: 2px 6px;
+        border-radius: 4px;
+        display: inline-block;
+      }
+      .fail {
+        color: #991b1b;
+        background: #fef2f2;
+        padding: 2px 6px;
+        border-radius: 4px;
+        display: inline-block;
+      }
+      details {
+        margin-top: 16px;
+      }
+      .small {
+        color: #6b7280;
+        font-size: 12px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+      }
+      .card {
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 12px;
+        background: white;
+      }
+      .muted {
+        color: #6b7280;
+      }
+      .hidden {
+        display: none;
+      }
+      @media (max-width: 800px) {
+        .grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Eval Results Viewer</h1>
+      <div class="controls">
+        <label
+          >Workflow
+          <select id="workflow"></select>
+        </label>
+        <label
+          >Filter Model
+          <input
+            id="modelFilter"
+            type="text"
+            placeholder="e.g., google/gemini"
+          />
+        </label>
+        <label
+          >Search Reason/Text
+          <input id="search" type="text" placeholder="contains..." />
+        </label>
+        <button id="reload">Reload from Server</button>
+      </div>
+    </header>
+
+    <section class="grid" id="summary"></section>
+
+    <section class="grid" id="model-averages">
+      <div class="card" style="grid-column: span 4">
+        <div class="muted small">Averages per model</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Model</th>
+              <th>Runs</th>
+              <th>Pass</th>
+              <th>Pass Rate</th>
+              <th>Avg Elapsed (s)</th>
+              <th>Avg Tokens (in/out/total)</th>
+            </tr>
+          </thead>
+          <tbody id="modelRows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Workflow</th>
+          <th>Eval</th>
+          <th>Model</th>
+          <th>Status</th>
+          <th>Steps</th>
+          <th>Elapsed (s)</th>
+          <th>Tokens (in/out/total)</th>
+          <th>Attempts/Step</th>
+          <th>Reason</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+
+    <details>
+      <summary>Raw JSON</summary>
+      <pre id="raw" style="white-space: pre-wrap"></pre>
+    </details>
+
+    <script>
+      const $ = (s) => document.querySelector(s);
+      const rows = $("#rows");
+      const workflowSel = $("#workflow");
+      const modelFilter = $("#modelFilter");
+      const search = $("#search");
+      const reloadBtn = $("#reload");
+      const raw = $("#raw");
+      const summary = $("#summary");
+      const modelRows = document.querySelector("#modelRows");
+
+      let all = [];
+
+      function formatRow(r) {
+        const statusClass = r.pass ? "ok" : "fail";
+        const attempts = (r.attemptsPerStep || []).join(", ");
+        return `<tr>
+          <td>${r.timestamp || ""}</td>
+          <td>${r.workflowName}</td>
+          <td>${r.evalName || ""}</td>
+          <td>${r.modelId || ""}</td>
+          <td><span class="${statusClass}">${
+          r.pass ? "PASS" : "FAIL"
+        }</span></td>
+          <td>${r.steps}</td>
+          <td>${(r.elapsedMs / 1000).toFixed(2)}</td>
+          <td>${r.tokensIn}/${r.tokensOut}/${r.tokensTotal}</td>
+          <td>${attempts}</td>
+          <td>${r.reason || ""}</td>
+        </tr>`;
+      }
+
+      function render(data) {
+        const wf = workflowSel.value;
+        const mf = modelFilter.value.trim().toLowerCase();
+        const q = search.value.trim().toLowerCase();
+        let filtered = data;
+        if (wf) filtered = filtered.filter((r) => r.workflowName === wf);
+        if (mf)
+          filtered = filtered.filter((r) =>
+            (r.modelId || "").toLowerCase().includes(mf)
+          );
+        if (q)
+          filtered = filtered.filter((r) =>
+            JSON.stringify(r).toLowerCase().includes(q)
+          );
+        filtered.sort((a, b) =>
+          (a.timestamp || "").localeCompare(b.timestamp || "")
+        );
+        rows.innerHTML = filtered.map(formatRow).join("");
+        raw.textContent = JSON.stringify(filtered, null, 2);
+
+        // Summary cards
+        const total = filtered.length;
+        const pass = filtered.filter((r) => r.pass).length;
+        const fail = total - pass;
+        const avgSeconds = (
+          filtered.reduce((s, r) => s + (r.elapsedMs || 0), 0) /
+          (total || 1) /
+          1000
+        ).toFixed(2);
+        const byModel = Object.entries(
+          filtered.reduce((m, r) => {
+            const k = r.modelId || "unknown";
+            m[k] = (m[k] || 0) + 1;
+            return m;
+          }, {})
+        ).sort((a, b) => b[1] - a[1]);
+
+        summary.innerHTML = `
+          <div class="card"><div class="muted small">Total</div><div><strong>${total}</strong></div></div>
+          <div class="card"><div class="muted small">Pass</div><div><strong>${pass}</strong></div></div>
+          <div class="card"><div class="muted small">Fail</div><div><strong>${fail}</strong></div></div>
+          <div class="card"><div class="muted small">Avg Elapsed</div><div><strong>${avgSeconds} s</strong></div></div>
+          ${byModel
+            .map(
+              ([m, c]) =>
+                `<div class=card><div class="muted small">${m}</div><div><strong>${c}</strong></div></div>`
+            )
+            .join("")}
+        `;
+        renderModelTable(filtered);
+      }
+
+      function renderModelTable(data) {
+        if (!modelRows) return;
+        const byModel = {};
+        for (const r of data) {
+          const k = r.modelId || "unknown";
+          if (!byModel[k]) {
+            byModel[k] = {
+              model: k,
+              total: 0,
+              pass: 0,
+              sumMs: 0,
+              in: 0,
+              out: 0,
+              totalTok: 0,
+            };
+          }
+          byModel[k].total += 1;
+          byModel[k].pass += r.pass ? 1 : 0;
+          byModel[k].sumMs += r.elapsedMs || 0;
+          byModel[k].in += r.tokensIn || 0;
+          byModel[k].out += r.tokensOut || 0;
+          byModel[k].totalTok += r.tokensTotal || 0;
+        }
+        const arr = Object.values(byModel).sort((a, b) =>
+          a.model.localeCompare(b.model)
+        );
+        const rowsHtml = arr
+          .map((x) => {
+            const passRate = x.total ? Math.round((x.pass / x.total) * 100) : 0;
+            const avgSeconds = x.total
+              ? (x.sumMs / x.total / 1000).toFixed(2)
+              : 0;
+            const avgIn = x.total ? Math.round(x.in / x.total) : 0;
+            const avgOut = x.total ? Math.round(x.out / x.total) : 0;
+            const avgTotal = x.total ? Math.round(x.totalTok / x.total) : 0;
+            return `<tr>
+            <td>${x.model}</td>
+            <td>${x.total}</td>
+            <td>${x.pass}</td>
+            <td>${passRate}%</td>
+            <td>${avgSeconds}</td>
+            <td>${avgIn}/${avgOut}/${avgTotal}</td>
+          </tr>`;
+          })
+          .join("");
+        modelRows.innerHTML = rowsHtml;
+      }
+
+      async function loadFromUrls() {
+        try {
+          const res = await fetch("/api/list");
+          if (!res.ok) throw new Error("Failed to list results");
+          const data = await res.json();
+          const files = Array.isArray(data.files) ? data.files : [];
+          if (files.length === 0) return;
+          const bases = files.map((f) =>
+            (f.file || "").replace(/\.jsonl$/i, "")
+          );
+          const arrays = await Promise.all(
+            bases.map((b) =>
+              fetch(`/api/results/${encodeURIComponent(b)}`).then((r) =>
+                r.json()
+              )
+            )
+          );
+          all = arrays.flat();
+          populateWorkflows(all);
+          render(all);
+        } catch (e) {
+          console.warn("Load from server failed:", e);
+        }
+      }
+
+      function populateWorkflows(data) {
+        const names = Array.from(
+          new Set(data.map((r) => r.workflowName))
+        ).sort();
+        workflowSel.innerHTML = [
+          '<option value="">All</option>',
+          ...names.map((n) => `<option>${n}</option>`),
+        ].join("");
+      }
+
+      workflowSel.addEventListener("change", () => render(all));
+      modelFilter.addEventListener("input", () => render(all));
+      search.addEventListener("input", () => render(all));
+      reloadBtn.addEventListener("click", () => loadFromUrls());
+
+      // Initial: load from server automatically
+      populateWorkflows([]);
+      loadFromUrls();
+    </script>
+  </body>
+</html>
