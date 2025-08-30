@@ -28,6 +28,13 @@ export type WorkflowRunResult = {
   attemptsPerStep: number[];
 };
 
+export class WorkflowRunError extends Error {
+  constructor(public result: WorkflowRunResult, message: string) {
+    super(message);
+    this.name = "WorkflowRunError";
+  }
+}
+
 export class WorkflowRunner {
   constructor(private mcp: PlaywrightMCP) {}
 
@@ -127,29 +134,70 @@ ${refinement ? `Refinement: ${refinement}` : ""}
           printModelResult(result, "Runner");
           accumulateTokenUsage(tokenSummary, result);
 
+          const rawText = (result.text ?? "").trim();
+          const nonEmptyLines = rawText.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.length > 0);
+          const firstLine = nonEmptyLines[0] ?? "";
+          const lastLine = nonEmptyLines[nonEmptyLines.length - 1] ?? "";
+          const isDone = firstLine.startsWith("DONE") || lastLine.startsWith("DONE");
+          const isError = firstLine.startsWith("ERROR") || lastLine.startsWith("ERROR");
+
           if (autoMode) {
-            // Auto mode logic: assume step is complete only if "DONE" is output
-            const rawText = (result.text ?? "").trim();
-            const outputText = rawText.toLowerCase();
-            if (outputText.includes("done")) {
+            if (isDone) {
               stepFinished = true;
               if (i === wf.steps.length - 1 && rawText) {
                 finalStepText = rawText;
               }
               logger.success("Runner", `[Auto Mode] Step ${i + 1} completed successfully`);
+            } else if (isError) {
+              const message = `[Auto Mode] Step ${i + 1} reported ERROR`;
+              logger.error("Runner", message);
+              // Record attempts before failing
+              attemptsPerStep.push(attempts);
+              const elapsedMs = Date.now() - startTimeMs;
+              logTokenUsageSummary("Runner", tokenSummary);
+              const partial: WorkflowRunResult = {
+                workflowName: wf.name,
+                steps: wf.steps.length,
+                autoMode,
+                elapsedMs,
+                tokenSummary,
+                finalText: rawText || undefined,
+                attemptsPerStep,
+              };
+              throw new WorkflowRunError(partial, message);
             } else if (attempts >= maxAttempts) {
               const message = `[Auto Mode] Step ${i + 1} failed after ${maxAttempts} attempts`;
               logger.error("Runner", message);
-              throw new Error(message);
+              // Record attempts before failing
+              attemptsPerStep.push(attempts);
+              const elapsedMs = Date.now() - startTimeMs;
+              logTokenUsageSummary("Runner", tokenSummary);
+              const partial: WorkflowRunResult = {
+                workflowName: wf.name,
+                steps: wf.steps.length,
+                autoMode,
+                elapsedMs,
+                tokenSummary,
+                finalText: rawText || undefined,
+                attemptsPerStep,
+              };
+              throw new WorkflowRunError(partial, message);
             } else {
               logger.warn("Runner", `[Auto Mode] Step ${i + 1} incomplete, retrying...`);
               // Add a small delay between attempts
               await new Promise((resolve) => setTimeout(resolve, 1000));
             }
           } else {
-            // Interactive mode logic: ask user for decision
+            // Interactive mode logic: ask user for decision; allow refinement even after ERROR
+            if (isError) {
+              logger.error("Runner", `Step ${i + 1} reported ERROR`);
+            }
             const decision = select({
-              message: "Is this step finished?",
+              message: isError
+                ? "Model says ERROR. Proceed, refine, or abort?"
+                : isDone
+                ? "Model says DONE. Proceed or refine?"
+                : "Is this step finished?",
               choices: [
                 { name: "Continue to next step", value: "continue" },
                 { name: "Re-run with change instructions", value: "refine" },
@@ -160,9 +208,13 @@ ${refinement ? `Refinement: ${refinement}` : ""}
 
             if (decision === "continue") {
               stepFinished = true;
-              const rawText = (result.text ?? "").trim();
               if (i === wf.steps.length - 1 && rawText) {
                 finalStepText = rawText;
+              }
+              if (isDone) {
+                logger.success("Runner", `Step ${i + 1} completed successfully`);
+              } else if (isError) {
+                logger.warn("Runner", `Continuing to next step despite ERROR on step ${i + 1}`);
               }
             } else if (decision === "refine") {
               const r = input({
@@ -171,7 +223,22 @@ ${refinement ? `Refinement: ${refinement}` : ""}
               });
               refinement = r || undefined;
             } else {
-              throw new Error("Workflow aborted by user");
+              // Abort workflow; include partial metrics
+              const message = "Workflow aborted by user";
+              // Record attempts before failing
+              attemptsPerStep.push(attempts);
+              const elapsedMs = Date.now() - startTimeMs;
+              logTokenUsageSummary("Runner", tokenSummary);
+              const partial: WorkflowRunResult = {
+                workflowName: wf.name,
+                steps: wf.steps.length,
+                autoMode,
+                elapsedMs,
+                tokenSummary,
+                finalText: rawText || undefined,
+                attemptsPerStep,
+              };
+              throw new WorkflowRunError(partial, message);
             }
           }
         }

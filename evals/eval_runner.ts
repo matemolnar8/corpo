@@ -1,5 +1,5 @@
 import { modelId } from "../src/model.ts";
-import { WorkflowRunner, WorkflowRunResult } from "../src/runner.ts";
+import { WorkflowRunError, WorkflowRunner, WorkflowRunResult } from "../src/runner.ts";
 import { connectPlaywrightMCP, disconnectPlaywrightMCP } from "../src/tools/mcp/playwright-mcp.ts";
 
 export type VerifyResult = { ok: true } | { ok: false; reason?: string };
@@ -50,6 +50,21 @@ export async function runEval(config: EvalConfig): Promise<EvalRunSummary> {
     };
   } catch (e) {
     console.error(e);
+    if (e instanceof WorkflowRunError) {
+      return {
+        pass: false,
+        reason: e.message,
+        workflowName: e.result.workflowName,
+        steps: e.result.steps,
+        elapsedMs: e.result.elapsedMs,
+        tokensIn: e.result.tokenSummary.inputTokens,
+        tokensOut: e.result.tokenSummary.outputTokens,
+        tokensTotal: e.result.tokenSummary.totalTokens,
+        attemptsPerStep: e.result.attemptsPerStep,
+        modelId,
+        timestamp: new Date().toISOString(),
+      };
+    }
     return {
       pass: false,
       reason: e instanceof Error ? e.message : "Unknown error",
