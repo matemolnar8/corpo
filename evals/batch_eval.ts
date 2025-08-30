@@ -4,7 +4,7 @@ import { parseArgs } from "@std/cli/parse-args";
 const MODELS: string[] = [
   "openai/gpt-oss-20b",
   "google/gemini-2.5-flash",
-  "anthropic/claude-4-sonnet",
+  "anthropic/claude-sonnet-4",
   "anthropic/claude-3.5-haiku",
   "openai/gpt-4.1-mini",
   "openai/gpt-oss-120b",
