@@ -15,10 +15,9 @@ export function getLogLevel(): LogLevel {
 function hashString(input: string): number {
   let hash = 0;
   for (let i = 0; i < input.length; i++) {
-    // Simple 32-bit hash
     hash = ((hash << 5) - hash + input.charCodeAt(i)) | 0;
   }
-  return hash >>> 0; // ensure unsigned
+  return hash >>> 0;
 }
 
 const tagColors: Array<(s: string) => string> = [cyan, magenta, blue, green, yellow, gray];

@@ -7,7 +7,7 @@ import { userInputTool } from "./tools/user-input.ts";
 import { listVariablesTool, resetVariables, retrieveVariableTool, storeVariableTool } from "./tools/variable.ts";
 import { snapshotGetAndFilterTool } from "./tools/snapshot-get-and-filter.ts";
 import { listSecretsTool } from "./tools/secret.ts";
-import { green, white } from "@std/fmt/colors";
+import { green } from "@std/fmt/colors";
 import { input, select } from "./cli_prompts.ts";
 import { model, stopWhen } from "./model.ts";
 import { loadSecrets } from "./tools/secret.ts";

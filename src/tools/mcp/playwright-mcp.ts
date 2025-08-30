@@ -28,17 +28,17 @@ export class PlaywrightMCP {
       args: headless ? [...PLAYWRIGHT_MCP.args, "--headless"] : [...PLAYWRIGHT_MCP.args],
     });
     await client.connect();
-    logger.debug("MCP", "Connected to Playwright MCP");
+    logger.debug("PlaywrightMCP", "Connected to Playwright MCP");
     this.client = client;
   }
 
   async disconnect(): Promise<void> {
     if (this.client) await this.client.disconnect();
-    logger.debug("MCP", "Disconnected from Playwright MCP");
+    logger.debug("PlaywrightMCP", "Disconnected from Playwright MCP");
   }
 
   private getClient(): MCPClient {
-    if (!this.client) throw new Error("MCP client not connected");
+    if (!this.client) throw new Error("PlaywrightMCP client not connected");
     return this.client;
   }
 
@@ -82,10 +82,10 @@ export class PlaywrightMCP {
     this.previousToolPromise = previousToolDeferred.promise;
     // Wait for previous tool to complete
     if (originalPreviousToolPromise) {
-      logger.debug("MCP", "Waiting for previous tool to complete");
+      logger.debug("PlaywrightMCP", "Waiting for previous tool to complete");
       await originalPreviousToolPromise;
     } else {
-      logger.debug("MCP", "No previous tool to wait for");
+      logger.debug("PlaywrightMCP", "No previous tool to wait for");
     }
 
     // Workaround for race condition in Playwright MCP
@@ -102,12 +102,12 @@ export class PlaywrightMCP {
         result = await this.callMcpTool(name, args, options);
       }
       const durationMs = Date.now() - startTimeMs;
-      logger.info("MCP", `⏱️ Tool '${name}' in ${durationMs}ms with args: ${stringifySmall(args)}`);
+      logger.info("PlaywrightMCP", `⏱️ Tool '${name}' in ${durationMs}ms with args: ${stringifySmall(args)}`);
       return result;
     } catch (err) {
       const durationMs = Date.now() - startTimeMs;
       logger.error(
-        "MCP",
+        "PlaywrightMCP",
         `⏱️ Tool '${name}' failed after ${durationMs}ms with args: ${stringifySmall(args)}: ${String(err)}`,
       );
       throw err;
@@ -124,16 +124,16 @@ export class PlaywrightMCP {
   ) {
     const client = this.getClient();
     // Log placeholders but not resolved secret values
-    logger.debug("MCP", `Tool '${name}' args: ${stringifySmall(args)}`);
+    logger.debug("PlaywrightMCP", `Tool '${name}' args: ${stringifySmall(args)}`);
     try {
       const { value: safeArgs, usedSecretNames } = replaceSecretsInArgsWithTracking(args);
       const result = await (client.callTool(name, safeArgs) as Promise<PlaywrightToolOutput>);
       const filtered = options.includeSnapshot ? result : this.removeSnapshots(result);
       const masked = replaceSecretsInResultAllowed(filtered, usedSecretNames);
-      logger.debug("MCP", `Tool '${name}' result: ${stringifySmall(masked)}`);
+      logger.debug("PlaywrightMCP", `Tool '${name}' result: ${stringifySmall(masked)}`);
       return masked;
     } catch (err) {
-      logger.error("MCP", `Tool '${name}' errored: ${String(err)}`);
+      logger.error("PlaywrightMCP", `Tool '${name}' errored: ${String(err)}`);
       throw err;
     }
   }
@@ -166,10 +166,10 @@ export class PlaywrightMCP {
       variable: z.string(),
     }),
     execute: async (options) => {
-      logger.debug("Tool", `snapshotAndSave args: ${stringifySmall(options)}`);
+      logger.debug("PlaywrightMCP", `snapshotAndSave args: ${stringifySmall(options)}`);
       const startTimeMs = Date.now();
       const { variable } = options;
-      logger.info("Tool", `📸 snapshot_and_save: saving snapshot to variable '${variable}'`);
+      logger.info("PlaywrightMCP", `📸 snapshot_and_save: saving snapshot to variable '${variable}'`);
       const result = await this.callMcpTool("browser_snapshot", {}, { includeSnapshot: true });
 
       const textContent = result.content.find((content) => content.type === "text");
@@ -182,20 +182,20 @@ export class PlaywrightMCP {
       const snapshotWithoutYaml = snapshot?.replace(/```yaml([\s\S]*?)```/g, "$1");
 
       if (!snapshotWithoutYaml) {
-        logger.warn("Tool", "📸 Couldn't create snapshot.");
+        logger.warn("PlaywrightMCP", "📸 Couldn't create snapshot.");
         const output = { success: false, reason: "Couldn't create snapshot." } as const;
-        logger.debug("Tool", `snapshotAndSave result: ${stringifySmall(output)}`);
+        logger.debug("PlaywrightMCP", `snapshotAndSave result: ${stringifySmall(output)}`);
         const durationMs = Date.now() - startTimeMs;
-        logger.info("Tool", `snapshot_and_save failed after ${durationMs}ms`);
+        logger.info("PlaywrightMCP", `snapshot_and_save failed after ${durationMs}ms`);
         return output;
       }
 
       setVariable(variable, snapshotWithoutYaml);
-      logger.info("Tool", `📸 Snapshot saved to variable '${variable}'`);
+      logger.info("PlaywrightMCP", `📸 Snapshot saved to variable '${variable}'`);
       const output = { success: true } as const;
-      logger.debug("Tool", `snapshotAndSave result: ${stringifySmall(output)}`);
+      logger.debug("PlaywrightMCP", `snapshotAndSave result: ${stringifySmall(output)}`);
       const durationMs = Date.now() - startTimeMs;
-      logger.info("Tool", `📸 snapshot_and_save finished in ${durationMs}ms`);
+      logger.info("PlaywrightMCP", `📸 snapshot_and_save finished in ${durationMs}ms`);
       return output;
     },
   });
