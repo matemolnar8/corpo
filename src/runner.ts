@@ -7,7 +7,7 @@ import { userInputTool } from "./tools/user-input.ts";
 import { listVariablesTool, resetVariables, retrieveVariableTool, storeVariableTool } from "./tools/variable.ts";
 import { snapshotGetAndFilterTool } from "./tools/snapshot-get-and-filter.ts";
 import { listSecretsTool } from "./tools/secret.ts";
-import { cyan as _cyan, gray as _gray, green as _green, red as _red, yellow as _yellow } from "@std/fmt/colors";
+import { green, white } from "@std/fmt/colors";
 import { input, select } from "./cli_prompts.ts";
 import { model, stopWhen } from "./model.ts";
 import { loadSecrets } from "./tools/secret.ts";
@@ -37,6 +37,7 @@ export class WorkflowRunner {
     logger.info("Runner", `Running workflow '${wf.name}' in ${modeText} mode with ${wf.steps.length} steps`);
 
     const tokenSummary = initTokenUsageSummary();
+    let finalStepText: string | undefined = undefined;
 
     for (let i = 0; i < wf.steps.length; i += 1) {
       const step = wf.steps[i];
@@ -109,9 +110,13 @@ ${refinement ? `Refinement: ${refinement}` : ""}
 
         if (autoMode) {
           // Auto mode logic: assume step is complete if tools were called or "DONE" is output
-          const outputText = (result.text ?? "").trim().toLowerCase();
+          const rawText = (result.text ?? "").trim();
+          const outputText = rawText.toLowerCase();
           if (outputText.includes("done")) {
             stepFinished = true;
+            if (i === wf.steps.length - 1 && rawText) {
+              finalStepText = rawText;
+            }
             logger.success("Runner", `[Auto Mode] Step ${i + 1} completed successfully`);
           } else if (attempts >= maxAttempts) {
             logger.error(
@@ -119,6 +124,9 @@ ${refinement ? `Refinement: ${refinement}` : ""}
               `[Auto Mode] Step ${i + 1} failed after ${maxAttempts} attempts, continuing to next step`,
             );
             stepFinished = true;
+            if (i === wf.steps.length - 1 && (result.text ?? "").trim()) {
+              finalStepText = (result.text ?? "").trim();
+            }
           } else {
             logger.warn("Runner", `[Auto Mode] Step ${i + 1} incomplete, retrying...`);
             // Add a small delay between attempts
@@ -138,6 +146,10 @@ ${refinement ? `Refinement: ${refinement}` : ""}
 
           if (decision === "continue") {
             stepFinished = true;
+            const rawText = (result.text ?? "").trim();
+            if (i === wf.steps.length - 1 && rawText) {
+              finalStepText = rawText;
+            }
           } else if (decision === "refine") {
             const r = input({
               message: "Describe changes to apply and re-run:",
@@ -155,6 +167,13 @@ ${refinement ? `Refinement: ${refinement}` : ""}
     logTokenUsageSummary("Runner", tokenSummary);
     const completionText = autoMode ? "completed in AUTO mode" : "completed";
     logger.success("Runner", `Workflow ${completionText}.`);
+
+    if ((finalStepText ?? "").trim()) {
+      logger.info("Runner", green("Final step output:"));
+      logger.info("Runner", green("--------------------------------"));
+      logger.info("Runner", (finalStepText ?? "").trim());
+      logger.info("Runner", green("--------------------------------"));
+    }
   }
 
   private async selectWorkflow(pref?: string): Promise<string> {

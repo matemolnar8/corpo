@@ -83,7 +83,11 @@ export function createSpinner() {
     },
     addText(text: string) {
       textQueue.unshift(text);
-      this.write();
+      if (running) {
+        this.write();
+      } else {
+        logger.warn("Spinner", "Attempted to update spinner while it is not running; update queued.");
+      }
     },
     removeText() {
       textQueue.shift();
@@ -95,7 +99,7 @@ export function createSpinner() {
     },
     write() {
       if (!running) {
-        throw new Error("Spinner is not running. Text queue: " + textQueue.join(", "));
+        return;
       }
       const text = textQueue.at(0) ?? "";
       return Deno.stdout.writeSync(new TextEncoder().encode(`\x1b[2K\r${frames[i++ % frames.length]} ${text}`));
