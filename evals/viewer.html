@@ -56,6 +56,16 @@
         position: sticky;
         top: 0;
       }
+      th.sortable {
+        cursor: pointer;
+        user-select: none;
+      }
+      th.sorted-asc::after {
+        content: " \25B2"; /* ▲ */
+      }
+      th.sorted-desc::after {
+        content: " \25BC"; /* ▼ */
+      }
       tbody tr:nth-child(odd) {
         background: #fafafa;
       }
@@ -138,14 +148,18 @@
       <div class="card" style="grid-column: span 4">
         <div class="muted small">Averages per model</div>
         <table>
-          <thead>
+          <thead id="modelHead">
             <tr>
-              <th>Model</th>
-              <th>Runs</th>
-              <th>Pass</th>
-              <th>Pass Rate</th>
-              <th>Avg Elapsed (s)</th>
-              <th>Avg Tokens (in/out/total)</th>
+              <th class="sortable" data-sort-key="model">Model</th>
+              <th class="sortable" data-sort-key="total">Runs</th>
+              <th class="sortable" data-sort-key="pass">Pass</th>
+              <th class="sortable" data-sort-key="passRate">Pass Rate</th>
+              <th class="sortable" data-sort-key="avgSeconds">
+                Avg Elapsed (s)
+              </th>
+              <th class="sortable" data-sort-key="avgTotalTokens">
+                Avg Tokens (in/out/total)
+              </th>
             </tr>
           </thead>
           <tbody id="modelRows"></tbody>
@@ -154,18 +168,18 @@
     </section>
 
     <table>
-      <thead>
+      <thead id="mainHead">
         <tr>
-          <th>Time</th>
-          <th>Workflow</th>
-          <th>Eval</th>
-          <th>Model</th>
-          <th>Status</th>
-          <th>Steps</th>
-          <th>Elapsed (s)</th>
-          <th>Tokens (in/out/total)</th>
-          <th>Attempts/Step</th>
-          <th>Reason</th>
+          <th class="sortable" data-sort-key="time">Time</th>
+          <th class="sortable" data-sort-key="workflow">Workflow</th>
+          <th class="sortable" data-sort-key="eval">Eval</th>
+          <th class="sortable" data-sort-key="model">Model</th>
+          <th class="sortable" data-sort-key="status">Status</th>
+          <th class="sortable" data-sort-key="steps">Steps</th>
+          <th class="sortable" data-sort-key="elapsed">Elapsed (s)</th>
+          <th class="sortable" data-sort-key="tokens">Tokens (in/out/total)</th>
+          <th class="sortable" data-sort-key="attempts">Attempts/Step</th>
+          <th class="sortable" data-sort-key="reason">Reason</th>
         </tr>
       </thead>
       <tbody id="rows"></tbody>
@@ -186,8 +200,12 @@
       const raw = $("#raw");
       const summary = $("#summary");
       const modelRows = document.querySelector("#modelRows");
+      const mainHead = document.querySelector("#mainHead");
+      const modelHead = document.querySelector("#modelHead");
 
       let all = [];
+      let mainSort = { key: "time", dir: "asc" };
+      let modelSort = { key: "model", dir: "asc" };
       // Read initial query params
       const initialParams = new URLSearchParams(location.search);
       const initialWorkflow = initialParams.get("workflow") || "";
@@ -229,11 +247,18 @@
           filtered = filtered.filter((r) =>
             JSON.stringify(r).toLowerCase().includes(q)
           );
-        filtered.sort((a, b) =>
-          (a.timestamp || "").localeCompare(b.timestamp || "")
-        );
+
+        // Sort according to current mainSort
+        const dir = mainSort.dir === "asc" ? 1 : -1;
+        filtered.sort((a, b) => {
+          const av = getMainSortValue(a, mainSort.key);
+          const bv = getMainSortValue(b, mainSort.key);
+          return compareValues(av, bv) * dir;
+        });
         rows.innerHTML = filtered.map(formatRow).join("");
         raw.textContent = JSON.stringify(filtered, null, 2);
+
+        updateMainHeaderIndicators();
 
         // Summary cards
         const total = filtered.length;
@@ -307,18 +332,28 @@
           byModel[k].out += r.tokensOut || 0;
           byModel[k].totalTok += r.tokensTotal || 0;
         }
-        const arr = Object.values(byModel).sort((a, b) =>
-          a.model.localeCompare(b.model)
-        );
-        const rowsHtml = arr
+        const arr = Object.values(byModel)
           .map((x) => {
             const passRate = x.total ? Math.round((x.pass / x.total) * 100) : 0;
-            const avgSeconds = x.total
-              ? (x.sumMs / x.total / 1000).toFixed(2)
-              : 0;
-            const avgIn = x.total ? Math.round(x.in / x.total) : 0;
-            const avgOut = x.total ? Math.round(x.out / x.total) : 0;
-            const avgTotal = x.total ? Math.round(x.totalTok / x.total) : 0;
+            const avgSeconds = x.total ? x.sumMs / x.total / 1000 : 0;
+            const avgIn = x.total ? x.in / x.total : 0;
+            const avgOut = x.total ? x.out / x.total : 0;
+            const avgTotal = x.total ? x.totalTok / x.total : 0;
+            return { ...x, passRate, avgSeconds, avgIn, avgOut, avgTotal };
+          })
+          .sort((a, b) => {
+            const dir = modelSort.dir === "asc" ? 1 : -1;
+            const av = getModelSortValue(a, modelSort.key);
+            const bv = getModelSortValue(b, modelSort.key);
+            return compareValues(av, bv) * dir;
+          });
+        const rowsHtml = arr
+          .map((x) => {
+            const passRate = x.passRate;
+            const avgSeconds = x.avgSeconds.toFixed(2);
+            const avgIn = Math.round(x.avgIn);
+            const avgOut = Math.round(x.avgOut);
+            const avgTotal = Math.round(x.avgTotal);
             return `<tr>
             <td>${x.model}</td>
             <td>${x.total}</td>
@@ -330,6 +365,94 @@
           })
           .join("");
         modelRows.innerHTML = rowsHtml;
+        updateModelHeaderIndicators();
+      }
+
+      function compareValues(a, b) {
+        const at = typeof a;
+        const bt = typeof b;
+        if (at === "number" && bt === "number") {
+          if (a < b) return -1;
+          if (a > b) return 1;
+          return 0;
+        }
+        const as = String(a).toLowerCase();
+        const bs = String(b).toLowerCase();
+        return as.localeCompare(bs);
+      }
+
+      function getMainSortValue(r, key) {
+        switch (key) {
+          case "time":
+            return r.timestamp ? Date.parse(r.timestamp) || 0 : 0;
+          case "workflow":
+            return r.workflowName || "";
+          case "eval":
+            return r.evalName || "";
+          case "model":
+            return r.modelId || "";
+          case "status":
+            return r.pass ? 1 : 0;
+          case "steps":
+            return r.steps || 0;
+          case "elapsed":
+            return r.elapsedMs || 0;
+          case "tokens":
+            return r.tokensTotal || 0;
+          case "attempts":
+            return Array.isArray(r.attemptsPerStep)
+              ? r.attemptsPerStep.reduce((s, n) => s + (Number(n) || 0), 0)
+              : 0;
+          case "reason":
+            return r.reason || "";
+          default:
+            return 0;
+        }
+      }
+
+      function getModelSortValue(x, key) {
+        switch (key) {
+          case "model":
+            return x.model || "";
+          case "total":
+            return x.total || 0;
+          case "pass":
+            return x.pass || 0;
+          case "passRate":
+            return x.passRate || 0;
+          case "avgSeconds":
+            return x.avgSeconds || 0;
+          case "avgTotalTokens":
+            return x.avgTotal || 0;
+          default:
+            return 0;
+        }
+      }
+
+      function updateMainHeaderIndicators() {
+        if (!mainHead) return;
+        mainHead.querySelectorAll("th").forEach((th) => {
+          th.classList.remove("sorted-asc", "sorted-desc");
+          const key = th.getAttribute("data-sort-key");
+          if (key && key === mainSort.key) {
+            th.classList.add(
+              mainSort.dir === "asc" ? "sorted-asc" : "sorted-desc"
+            );
+          }
+        });
+      }
+
+      function updateModelHeaderIndicators() {
+        if (!modelHead) return;
+        modelHead.querySelectorAll("th").forEach((th) => {
+          th.classList.remove("sorted-asc", "sorted-desc");
+          const key = th.getAttribute("data-sort-key");
+          if (key && key === modelSort.key) {
+            th.classList.add(
+              modelSort.dir === "asc" ? "sorted-asc" : "sorted-desc"
+            );
+          }
+        });
       }
 
       async function loadFromUrls() {
@@ -388,6 +511,38 @@
         render(all);
       });
       reloadBtn.addEventListener("click", () => loadFromUrls());
+      if (mainHead) {
+        mainHead.addEventListener("click", (e) => {
+          const target = e.target;
+          if (!(target instanceof HTMLElement)) return;
+          const th = target.closest("th");
+          if (!th) return;
+          const key = th.getAttribute("data-sort-key");
+          if (!key) return;
+          if (mainSort.key === key) {
+            mainSort.dir = mainSort.dir === "asc" ? "desc" : "asc";
+          } else {
+            mainSort = { key, dir: "asc" };
+          }
+          render(all);
+        });
+      }
+      if (modelHead) {
+        modelHead.addEventListener("click", (e) => {
+          const target = e.target;
+          if (!(target instanceof HTMLElement)) return;
+          const th = target.closest("th");
+          if (!th) return;
+          const key = th.getAttribute("data-sort-key");
+          if (!key) return;
+          if (modelSort.key === key) {
+            modelSort.dir = modelSort.dir === "asc" ? "desc" : "asc";
+          } else {
+            modelSort = { key, dir: "asc" };
+          }
+          renderModelTable(all);
+        });
+      }
 
       // Initial: load from server automatically
       populateWorkflows([]);
