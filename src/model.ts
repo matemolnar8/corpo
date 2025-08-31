@@ -7,6 +7,6 @@ const openrouter = createOpenRouter({
 
 // Model configuration
 // Default model can be overridden via env var MODEL_ID for easy A/B comparisons
-export const modelId = Deno.env.get("MODEL_ID") ?? "google/gemini-2.5-flash";
+export const modelId = Deno.env.get("MODEL_ID") ?? "google/gemini-2.5-pro";
 export const model = openrouter(modelId);
 export const stopWhen = stepCountIs(20);

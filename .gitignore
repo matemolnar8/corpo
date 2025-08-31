@@ -16,5 +16,3 @@ logs
 
 workflows/*
 secrets.json
-
-evals/results/*

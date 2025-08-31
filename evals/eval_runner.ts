@@ -154,5 +154,5 @@ if (import.meta.main) {
     if (!summary.pass) anyFail = true;
   }
 
-  if (anyFail) Deno.exit(1);
+  await exit(anyFail ? 1 : 0);
 }

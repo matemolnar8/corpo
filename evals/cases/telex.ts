@@ -6,7 +6,7 @@ export const config: EvalConfig = {
   verify: (result) => {
     const text = result.finalText ?? "";
     const success = text.includes(
-      "Idejönnek az emberek, isznak, drogoznak, és azt gondolják, az élet csak egy buli",
+      "Nem biztos, hogy érdemes a mobilos adatokra hivatkozva dicsekedni arról, hányan nézték a tűzijátékot",
     );
     return success ? { ok: true } : { ok: false, reason: `Unexpected final text: ${result.finalText}` };
   },
