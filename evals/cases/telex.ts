@@ -6,7 +6,7 @@ export const config: EvalConfig = {
   verify: (result) => {
     const text = result.finalText ?? "";
     const success = text.includes(
-      "Nem biztos, hogy érdemes a mobilos adatokra hivatkozva dicsekedni arról, hányan nézték a tűzijátékot",
+      "Mesteri trollkodással mutatta meg, hogyan kell harcolni Trump ellen",
     );
     return success ? { ok: true } : { ok: false, reason: `Unexpected final text: ${result.finalText}` };
   },

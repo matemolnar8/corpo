@@ -17,6 +17,8 @@ const MODELS: string[] = [
   // "meta-llama/llama-3.3-70b-instruct",
   // "meta-llama/llama-4-maverick",
   // "meta-llama/llama-4-scout",
+  // "qwen/qwen3-30b-a3b-instruct-2507",
+  // "qwen/qwen3-235b-a22b-2507",
 ];
 
 type ParsedArgs = { evalName: string; repeat: number };
