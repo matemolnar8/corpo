@@ -1,9 +1,8 @@
 ---
-alwaysApply: false
-globs: *.ts,*.tsx
 description: Always run type check and tests after TypeScript changes using project tasks
+globs: *.ts
+alwaysApply: false
 ---
-
 # TypeScript changes require type-check and tests
 
 Whenever you make a substantive edit to TypeScript files, do both of the following:

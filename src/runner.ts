@@ -3,6 +3,7 @@ import { listWorkflows, loadWorkflow } from "./workflows.ts";
 import { PlaywrightMCP } from "./tools/mcp/playwright-mcp.ts";
 import {
   accumulateTokenUsage,
+  buildCompactPreviousStepsSummary,
   initTokenUsageSummary,
   logTokenUsageSummary,
   printModelResult,
@@ -87,6 +88,11 @@ export class WorkflowRunner {
             logger.info("Runner", `[Auto Mode] Attempt ${attempts}/${maxAttempts}`);
           }
 
+          const previousStepsSummary = buildCompactPreviousStepsSummary(wf.steps, i);
+          const prevSection = previousStepsSummary
+            ? `Previous steps (recent):\n\n\`\`\`\n${previousStepsSummary}\n\`\`\`\n`
+            : "";
+
           const prompt = `Reproduce the following browser automation step using the available tools.
 
 Rules:
@@ -109,6 +115,7 @@ Tool rules:
 
 When finished, output a single line starting with 'DONE'. Only output 'DONE' if the step is fully completed. Otherwise, if there was an error, output 'ERROR' and explain the error.
 
+${prevSection}
 Step: 
 \`\`\`
 ${step.instruction}

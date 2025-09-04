@@ -1,7 +1,13 @@
 import { generateText } from "ai";
 import { saveWorkflow, Workflow, WorkflowStep } from "./workflows.ts";
 import { PlaywrightMCP } from "./tools/mcp/playwright-mcp.ts";
-import { accumulateTokenUsage, initTokenUsageSummary, logTokenUsageSummary, printModelResult } from "./utils.ts";
+import {
+  accumulateTokenUsage,
+  buildCompactPreviousStepsSummary,
+  initTokenUsageSummary,
+  logTokenUsageSummary,
+  printModelResult,
+} from "./utils.ts";
 import { logger, spinner } from "./log.ts";
 import { userInputTool } from "./tools/user-input.ts";
 import { listVariablesTool, resetVariables, retrieveVariableTool, storeVariableTool } from "./tools/variable.ts";
@@ -64,6 +70,10 @@ export class WorkflowRecorder {
       let refinement: string | undefined = undefined;
       spinner.start();
       while (!accepted) {
+        const previousStepsSummary = buildCompactPreviousStepsSummary(steps, steps.length);
+        const prevSection = previousStepsSummary
+          ? `Context (recent previous steps):\n\n\`\`\`\n${previousStepsSummary}\n\`\`\`\n\n`
+          : "";
         const prompt =
           `You are a helpful browser automation assistant. You are recording a browser automation workflow. Use the available tools to perform the user's step, until the step is fully completed.
 
@@ -92,6 +102,7 @@ Tool rules:
 - Use the snapshot_get_and_filter tool to filter a stored snapshot to find specific elements. This is the default path for element discovery and should be preferred over running JavaScript; reading the full snapshot by the model is slow and expensive.
 - When you need credentials or are unsure which secret names exist, first call list_secrets to view the available placeholders and then use those placeholders (e.g., {{secret.NAME}}) in subsequent tool calls. Never include raw secret values in messages.
 
+${prevSection}
 User step:
 \`\`\`
 ${nextAction}

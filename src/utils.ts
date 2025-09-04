@@ -1,6 +1,7 @@
 import { GenerateTextResult } from "ai";
 import { disconnectPlaywrightMCP } from "./tools/mcp/playwright-mcp.ts";
 import { getLogLevel, logger, stringifySmall } from "./log.ts";
+import { WorkflowStep } from "./workflows.ts";
 
 // Shared utility function for printing AI-SDK model results
 export function printModelResult(
@@ -121,4 +122,29 @@ export function deferPromise<T>(): {
   });
 
   return { promise, resolve: deferred!.resolve, reject: deferred!.reject };
+}
+
+// Build a compact summary of previous workflow steps to provide minimal context
+// without significantly increasing token usage. Includes only the most recent
+// few steps and truncates each line.
+export function buildCompactPreviousStepsSummary(
+  steps: WorkflowStep[],
+  uptoIndexExclusive: number,
+): string {
+  if (!steps || uptoIndexExclusive <= 0) return "";
+  const maxRecent = 3;
+  const maxLineLength = Infinity;
+
+  const start = Math.max(0, uptoIndexExclusive - maxRecent);
+  const lines: string[] = [];
+  for (let i = start; i < uptoIndexExclusive; i++) {
+    const step = steps[i];
+    const firstReproLine = (step.reproduction || "").split(/\r?\n/)[0]?.trim() ?? "";
+    const base = (firstReproLine || step.instruction || "").replace(/\s+/g, " ").trim();
+    const text = base.length > maxLineLength ? `${base.slice(0, maxLineLength - 1)}…` : base;
+    lines.push(`${i + 1}) ${text}`);
+  }
+
+  // Keep header minimal; callers can wrap in a code fence.
+  return lines.join("\n");
 }
