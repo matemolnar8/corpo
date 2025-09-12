@@ -1,6 +1,7 @@
 import { generateText } from "ai";
 import { listWorkflows, loadWorkflow } from "./workflows.ts";
 import { PlaywrightMCP } from "./tools/mcp/playwright-mcp.ts";
+import { RUNNER_SYSTEM_PROMPT } from "./prompts.ts";
 import {
   accumulateTokenUsage,
   buildCompactPreviousStepsSummary,
@@ -65,6 +66,8 @@ export class WorkflowRunner {
     let finalStepText: string | undefined = undefined;
     const attemptsPerStep: number[] = [];
 
+    logger.debug("Runner", `System prompt: ${RUNNER_SYSTEM_PROMPT}`);
+
     for (let i = 0; i < wf.steps.length; i += 1) {
       const step = wf.steps[i];
       logger.info("Runner", `Step ${i + 1}/${wf.steps.length}`);
@@ -90,40 +93,21 @@ export class WorkflowRunner {
 
           const previousStepsSummary = buildCompactPreviousStepsSummary(wf.steps, i);
           const prevSection = previousStepsSummary
-            ? `Previous steps (recent):\n\n\`\`\`\n${previousStepsSummary}\n\`\`\`\n`
+            ? `Context (previous steps):\n\n\`\`\`\n${previousStepsSummary}\n\`\`\`\n`
             : "";
 
-          const prompt = `Reproduce the following browser automation step using the available tools.
+          const system = RUNNER_SYSTEM_PROMPT;
 
-Rules:
-- Keep calling tools until the step is fully completed; do not stop after a single call.
-- Prefer: snapshot -> filter with snapshot_get_and_filter -> analyze -> act (e.g., click) using robust selectors/descriptions.
-- For clicking text like 'leading article heading', snapshot and analyze to find the best locator, then click that element.
-
-Snapshot guidance:
-- Snapshots are ARIA accessibility snapshots (accessibility trees). Node descriptors use ARIA roles (e.g., 'button', 'link', 'heading', 'row') and accessible names.
-- Prefer locating elements by role and accessible name. Use descriptor attributes (e.g., [level=2], [checked]) when helpful.
-- Use the snapshot_get_and_filter tool to filter stored snapshots by role/text/attributes. Avoid loading entire snapshots into the model.
-
-Tool rules:
-- Prefer snapshot_get_and_filter for locating elements, reading text, and checking attributes. Use browser_evaluate only when snapshot filtering cannot achieve the goal. Do not use it for actions that can be performed with other tools.
-- Use the store_variable tool to store results you will need in a later step.
-- Snapshots can be stored in variables with the browser_snapshot_and_save tool. Use the retrieve_variable tool to get the snapshot and analyze it.
-- Use the snapshot_get_and_filter tool to filter a stored snapshot to find specific elements. This is the default path for element discovery and should be preferred over running JavaScript; reading the full snapshot by the model is slow and expensive.
-- If you need to reference a credential or secret in a tool call, use placeholders like {{secret.NAME}}. Do not reveal secret values; placeholders will be replaced at tool-execution time.
-- When you need credentials or are unsure which secret names exist, first call list_secrets to view the available placeholders and then use those placeholders (e.g., {{secret.NAME}}) in subsequent tool calls. Never include raw secret values in messages.
-
-When finished, output a single line starting with 'DONE'. Only output 'DONE' if the step is fully completed. Otherwise, if there was an error, output 'ERROR' and explain the error.
-
+          const prompt = `
 ${prevSection}
-Step: 
+
+Perform the following step:
 \`\`\`
 ${step.instruction}
 
 How to reproduce:
 ${step.reproduction}
-
-${refinement ? `Refinement: ${refinement}` : ""}
+${refinement ? `\nRefinement: ${refinement}` : ""}
 \`\`\`
 `;
 
@@ -134,6 +118,7 @@ ${refinement ? `Refinement: ${refinement}` : ""}
           const result = await generateText({
             model: model,
             tools: allTools,
+            system,
             prompt,
             stopWhen,
           });

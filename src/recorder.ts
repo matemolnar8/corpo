@@ -1,6 +1,7 @@
 import { generateText } from "ai";
 import { saveWorkflow, Workflow, WorkflowStep } from "./workflows.ts";
 import { PlaywrightMCP } from "./tools/mcp/playwright-mcp.ts";
+import { RECORDER_SYSTEM_PROMPT } from "./prompts.ts";
 import {
   accumulateTokenUsage,
   buildCompactPreviousStepsSummary,
@@ -45,6 +46,8 @@ export class WorkflowRecorder {
       message: "Description (optional):",
     });
 
+    logger.debug("Recorder", `System prompt: ${RECORDER_SYSTEM_PROMPT}`);
+
     // Guidance
     logger.info(
       "Recorder",
@@ -72,42 +75,16 @@ export class WorkflowRecorder {
       while (!accepted) {
         const previousStepsSummary = buildCompactPreviousStepsSummary(steps, steps.length);
         const prevSection = previousStepsSummary
-          ? `Context (recent previous steps):\n\n\`\`\`\n${previousStepsSummary}\n\`\`\`\n\n`
+          ? `Context (previous steps):\n\n\`\`\`\n${previousStepsSummary}\n\`\`\`\n\n`
           : "";
-        const prompt =
-          `You are a helpful browser automation assistant. You are recording a browser automation workflow. Use the available tools to perform the user's step, until the step is fully completed.
+        const system = RECORDER_SYSTEM_PROMPT;
 
-Rules:
-- Keep calling tools as needed until the step is fully completed; do not stop after a single tool call.
-- Prefer: take a page snapshot -> filter with snapshot_get_and_filter -> analyze -> perform the precise action (e.g., click) using a robust selector or description.
-- When the step is fully done, ALWAYS output a REPRO block that describes how to reproduce the step later.
-- Start a line with \`REPRO:\`, then provide one or more lines of instructions, and finish with a line \`ENDREPRO\`. Do not include code fences. Example:
-  REPRO:
-  use snapshot_get_and_filter to locate the button [name="Submit"] and click it
-  verify the confirmation toast appears with role="status" and text includes "Saved"
-  ENDREPRO
-- The REPRO block should only mention specific elements if they are expected to be stable; otherwise describe how to locate them dynamically.
-- The REPRO block MUST include the tools used to perform the step.
-- If the instruction is to click text (e.g., 'Bookings' or 'leading article heading'), first snapshot and analyze to find a stable descriptor, then click using that descriptor.
-
-Snapshot guidance:
-- Snapshots are ARIA accessibility snapshots (accessibility trees). Node descriptors use ARIA roles (e.g., 'button', 'link', 'heading', 'row') and accessible names.
-- Prefer locating elements by role and accessible name. Use attributes from descriptors (e.g., [level=2], [checked]) when helpful.
-- Use the snapshot_get_and_filter tool to filter stored snapshots by role/text/attributes. Avoid loading entire snapshots into the model.
-
-Tool rules:
-- Prefer snapshot_get_and_filter for locating elements, reading text, and checking attributes. Use browser_evaluate only when snapshot filtering cannot achieve the goal. Do not use it for actions that can be performed with other tools.
-- Use the store_variable tool to store the result of your actions in a variable when needed to use in a later step.
-- Snapshots can be stored in variables with the browser_snapshot_and_save tool. Use the retrieve_variable tool to get the snapshot and analyze it.
-- Use the snapshot_get_and_filter tool to filter a stored snapshot to find specific elements. This is the default path for element discovery and should be preferred over running JavaScript; reading the full snapshot by the model is slow and expensive.
-- When you need credentials or are unsure which secret names exist, first call list_secrets to view the available placeholders and then use those placeholders (e.g., {{secret.NAME}}) in subsequent tool calls. Never include raw secret values in messages.
-
-${prevSection}
-User step:
+        const prompt = `${prevSection}
+Perform the following step, and output a REPRO block that describes how to reproduce the step later.
+Step:
 \`\`\`
 ${nextAction}
-
-${refinement ? `Refinement: ${refinement}` : ""}
+${refinement ? `\nRefinement: ${refinement}` : ""}
 \`\`\`
 `;
 
@@ -118,6 +95,7 @@ ${refinement ? `Refinement: ${refinement}` : ""}
         const result = await generateText({
           model: model,
           tools: allTools,
+          system,
           prompt,
           stopWhen,
         });

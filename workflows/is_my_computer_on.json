@@ -1,0 +1,14 @@
+{
+  "name": "is_my_computer_on",
+  "createdAt": "2025-08-29T20:14:29.519Z",
+  "steps": [
+    {
+      "instruction": "Navigate to https://tylerpalko.github.io/Is-My-Computer-ON/",
+      "reproduction": "use browser_navigate with url \"https://tylerpalko.github.io/Is-My-Computer-ON/\""
+    },
+    {
+      "instruction": "Check the first heading on the page, and answer to the user whether their computer is on or not based on the text.",
+      "reproduction": "use browser_snapshot_and_save to save the page snapshot\nuse snapshot_get_and_filter to retrieve the heading element with text \"Yes.\"\nanalyze the text attribute of the retrieved element to determine whether the computer is on or off"
+    }
+  ]
+}

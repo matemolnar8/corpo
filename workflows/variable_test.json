@@ -1,0 +1,18 @@
+{
+  "name": "variable_test",
+  "createdAt": "2025-08-19T19:32:31.711Z",
+  "steps": [
+    {
+      "instruction": "Ask the user for a search query, and save it into a variable",
+      "reproduction": "Ask the user for a search query using `user_input` and store it in a variable named \"search_query\" using `store_variable`."
+    },
+    {
+      "instruction": "Open https://duckduckgo.com",
+      "reproduction": "Use `browser_navigate` to open `https://duckduckgo.com`."
+    },
+    {
+      "instruction": "Get the user's search query from the search_query variable and input it into the search field",
+      "reproduction": "Retrieve the value of `search_query` variable and type it into the combobox with label \"Search with DuckDuckGo\" (ref `e18`), then submit."
+    }
+  ]
+}

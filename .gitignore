@@ -14,5 +14,5 @@ Thumbs.db
 logs
 *.log
 
-workflows/*
+# workflows/*
 secrets.json

@@ -1,0 +1,30 @@
+{
+  "name": "commuting_new_202507",
+  "createdAt": "2025-09-02T07:27:27.776Z",
+  "steps": [
+    {
+      "instruction": "Store 2025-07 in a variable",
+      "reproduction": "Store the date 2025-07 in a variable named \"date\" using the `store_variable` tool."
+    },
+    {
+      "instruction": "Open https://genesys.okta.com",
+      "reproduction": "use browser_navigate to open the URL https://genesys.okta.com"
+    },
+    {
+      "instruction": "Type the okta_email secret into the username, the okta_password secret into the password field, and press sign in. Wait for the Cloudbooking tile to show to confirm successful sign in.",
+      "reproduction": "use snapshot_get_and_filter to locate the \"Username\" and \"Password\" textboxes and the \"Sign In\" button\nuse browser_fill_form to type the okta_email and okta_password secrets into the respective fields\nuse browser_click to click the \"Sign In\" button\nuse browser_wait_for to wait for the text \"Cloudbooking\" to appear"
+    },
+    {
+      "instruction": "Click the Cloudbooking link, then switch to the newly opened Cloudbooking tab. Verify the page has loaded by looking for \"My Bookings\"",
+      "reproduction": "Click the \"Cloudbooking\" link.\nSwitch to the newly opened browser tab.\nUse snapshot_get_and_filter to find the text \"My Bookings\" to verify the page has loaded."
+    },
+    {
+      "instruction": "Click the \"My Bookings\" menu item, then set the View dropdown to \"Past\"",
+      "reproduction": "use snapshot_get_and_filter to locate the cell with text \"My Bookings\" and click it\nuse snapshot_get_and_filter to locate the combobox with the option \"Past\" and select the \"Past\" option"
+    },
+    {
+      "instruction": "Get all the rows from the page that has the End date specified as the date provided by the user in the 'date' variable. The End date is in the 10th column. Output all the days with this end date before continuing.",
+      "reproduction": "retrieve the `date` variable\ntake a snapshot of the page and store it as `page_snapshot`\nfilter the `page_snapshot` for rows containing the year and month from the `date` variable.\nextract the day from the 10th column of each of the filtered rows and output them one by line."
+    }
+  ]
+}

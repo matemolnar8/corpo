@@ -1,0 +1,18 @@
+{
+  "name": "telex",
+  "createdAt": "2025-08-23T19:26:09.905Z",
+  "steps": [
+    {
+      "instruction": "Open https://telex.hu",
+      "reproduction": "Navigate to \"https://telex.hu\" using functions.browser_navigate, then save a snapshot of the page with functions.browser_snapshot_and_save."
+    },
+    {
+      "instruction": "Open the leading article",
+      "reproduction": "Take a snapshot of the page using browser_snapshot_and_save, evaluate to find an element with class \"leader\" and get the href of the contained anchor, then navigate browser to the found href using browser_evaluate and browser_navigate."
+    },
+    {
+      "instruction": "Output the title of the article, and finish",
+      "reproduction": "Take a page snapshot with browser_snapshot_and_save, filter for role \"heading\" with snapshot_get_and_filter, and extract text from the level 1 heading element."
+    }
+  ]
+}
