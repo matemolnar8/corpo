@@ -12,7 +12,7 @@ import { PLAYWRIGHT_ALLOWED_TOOL_NAMES } from "./playwright-tools.ts";
 
 const PLAYWRIGHT_MCP = {
   command: "npx",
-  args: ["@playwright/mcp@latest"] as const,
+  args: ["@playwright/mcp@0.0.37"] as const,
 } as const;
 
 export type PlaywrightToolOutput = { content: (TextContent | ImageContent)[]; isError?: boolean };
