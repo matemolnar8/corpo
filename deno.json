@@ -1,14 +1,37 @@
 {
+  "permissions": {
+    "run-cli": {
+      "env": true,
+      "net": true,
+      "read": ["./workflows", "./secrets.json"],
+      "write": ["./workflows"],
+      "run": { "allow": ["npx"] }
+    },
+    "evals": {
+      "env": true,
+      "net": true,
+      "read": ["./workflows", "./secrets.json", "./evals"],
+      "write": ["./workflows", "./evals"],
+      "run": { "allow": ["deno", "npx"] }
+    },
+    "test": {
+      "env": true,
+      "net": true,
+      "read": ["./workflows", "./secrets.json", "./resources", "./src"],
+      "write": ["./workflows"],
+      "run": { "allow": ["npx"] }
+    }
+  },
   "tasks": {
-    "corpo": "deno run --env-file --allow-net --allow-env --allow-run=npx --allow-write=./workflows --allow-read=./workflows,./secrets.json src/index.ts",
-    "debug": "deno run --inspect --env-file --allow-net --allow-env --allow-run=npx --allow-write=./workflows --allow-read=./workflows,./secrets.json src/index.ts",
-    "test": "deno test --env-file --allow-net --allow-env --allow-run=npx --allow-write=./workflows --allow-read=./workflows,./secrets.json,./resources,./src",
+    "corpo": "deno run -P=run-cli --env-file src/index.ts",
+    "debug": "deno run -P=run-cli --inspect --env-file src/index.ts",
+    "test": "deno test -P=test --env-file",
     "run": "deno task corpo run",
     "record": "deno task corpo record",
     "run-auto": "deno task corpo run-auto",
-    "eval": "deno run --env-file --allow-net --allow-env --allow-run=npx --allow-read=./workflows,./secrets.json,./evals --allow-write=./workflows,./evals evals/eval_runner.ts",
-    "batch-eval": "deno run --env-file --allow-net --allow-env --allow-run=deno,npx --allow-read=./workflows,./secrets.json,./evals --allow-write=./workflows,./evals evals/batch_eval.ts",
-    "serve-evals": "deno run --allow-net --allow-read=./evals evals/server.ts"
+    "eval": "deno run -P=evals --env-file evals/eval_runner.ts",
+    "batch-eval": "deno run -P=evals --env-file evals/batch_eval.ts",
+    "serve-evals": "deno run -P=evals evals/server.ts"
   },
   "imports": {
     "@std/cli": "jsr:@std/cli@^1.0.21",
