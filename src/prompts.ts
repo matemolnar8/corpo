@@ -21,7 +21,7 @@ Tool rules:
 - When you need credentials or are unsure which secret names exist, first call list_secrets to view the available placeholders and then use those placeholders (e.g., {{secret.NAME}}) in subsequent tool calls. Never include raw secret values in messages.`;
 
 export const PREVIOUS_STEPS_CONTEXT = `
-Previous steps will be provided in the prompt. Do not execute them; just use them as context for running the current step.`;
+Previous steps will be provided in the prompt. DO NOT execute them; just use them as context for running the current step.`;
 
 // Complete shared system prompt base
 export const SHARED_SYSTEM_PROMPT_BASE = `${COMMON_SYSTEM_PROMPT_START}

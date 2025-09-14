@@ -25,10 +25,9 @@ export async function saveWorkflow(workflow: Workflow): Promise<string> {
 
   const encoder = new TextEncoder();
   const data = encoder.encode(JSON.stringify(workflow, null, 2));
-
   const file = join(WORKFLOW_DIR, `${sanitize(workflow.name)}.json`);
-  await Deno.writeFile(file, data);
 
+  await Deno.writeFile(file, data);
   return file;
 }
 

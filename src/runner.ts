@@ -12,8 +12,8 @@ import {
 } from "./utils.ts";
 import { logger, spinner } from "./log.ts";
 import { userInputTool } from "./tools/user-input.ts";
-import { listVariablesTool, resetVariables, retrieveVariableTool, storeVariableTool } from "./tools/variable.ts";
-import { snapshotGetAndFilterTool } from "./tools/snapshot-get-and-filter.ts";
+import { listVariablesTool, retrieveVariableTool, storeVariableTool } from "./tools/variable.ts";
+import { snapshotFilterJsonTool, snapshotGetAndFilterTool } from "./tools/snapshot.ts";
 import { listSecretsTool } from "./tools/secret.ts";
 import { green } from "@std/fmt/colors";
 import { input, select } from "./cli_prompts.ts";
@@ -42,7 +42,6 @@ export class WorkflowRunner {
 
   async run(workflowName?: string, autoMode: boolean = false): Promise<WorkflowRunResult> {
     const startTimeMs = Date.now();
-    resetVariables();
     await loadSecrets();
     const name = await this.selectWorkflow(workflowName);
     const wf = await loadWorkflow(name);
@@ -56,6 +55,7 @@ export class WorkflowRunner {
       list_variables: listVariablesTool,
       list_secrets: listSecretsTool,
       snapshot_get_and_filter: snapshotGetAndFilterTool,
+      snapshot_filter_json: snapshotFilterJsonTool,
     };
     logger.info("Runner", `Exposed tools: ${Object.keys(allTools).join(", ") || "<none>"}`);
 
@@ -93,7 +93,7 @@ export class WorkflowRunner {
 
           const previousStepsSummary = buildCompactPreviousStepsSummary(wf.steps, i);
           const prevSection = previousStepsSummary
-            ? `Context (previous steps):\n\n\`\`\`\n${previousStepsSummary}\n\`\`\`\n`
+            ? `Context (previous steps, do not execute them):\n\n\`\`\`\n${previousStepsSummary}\n\`\`\`\n`
             : "";
 
           const system = RUNNER_SYSTEM_PROMPT;

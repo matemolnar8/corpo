@@ -233,7 +233,7 @@ export const snapshotGetAndFilterTool = tool({
   execute: ({ variable, filter, includeSubtree, mode, maxResults, storeInVariable }) => {
     spinner.addText("Running snapshot_get_and_filter...");
     try {
-      const MAX_JSON_CHARS = 30_000;
+      const MAX_JSON_CHARS = 120_000;
       // Start log
       let __argsStr = "";
       try {
@@ -300,6 +300,132 @@ export const snapshotGetAndFilterTool = tool({
       );
       const __dur = Date.now() - __start;
       logger.info("Tool", `🔎 snapshot_get_and_filter: ${matches.length} match(es) in ${__dur}ms`);
+      return { success: true, count: matches.length, json };
+    } finally {
+      spinner.removeText();
+    }
+  },
+});
+
+// --- JSON re-filter tool ---
+
+const snapshotFilterJsonInputSchema = z.object({
+  variable: z.string().describe("Name of the variable that holds JSON returned by snapshot_get_and_filter"),
+  filter: z
+    .object({
+      role: z.union([z.string(), z.array(z.string())]).optional()
+        .describe("Filter by accessibility role (e.g., 'table', 'link', 'row')"),
+      text: z
+        .union([
+          z.object({ equals: z.string() }),
+          z.object({ contains: z.string() }),
+          z.object({ regex: z.string(), flags: z.string().optional() }),
+        ])
+        .optional()
+        .describe(
+          "Filter by accessible name/text using equals, contains, or regex.",
+        ),
+      attributes: z
+        .record(z.string(), z.string())
+        .optional()
+        .describe("Match descriptor attributes like level=4, cursor=pointer"),
+    })
+    .default({})
+    .describe("Filter by accessibility role/text/attributes. Make sure to use the most specific filter possible."),
+  includeSubtree: z.boolean().default(false).describe(
+    "Include the full subtree of matched nodes. Expensive, should be used when absolutely necessary.",
+  ),
+  mode: z.enum(["first", "all"]).default("all").describe("Return only the first match or all matches"),
+  maxResults: z.number().int().positive().optional().describe("Limit the number of returned matches"),
+  storeInVariable: z.string().optional().describe("If provided, store the JSON result in this variable name"),
+});
+
+function normalizeNodesFromJson(input: unknown): AccessibilityNode[] {
+  if (!Array.isArray(input)) return [];
+
+  function coerceRecord(rec: unknown): Record<string, string> {
+    if (!rec || typeof rec !== "object") return {};
+    const out: Record<string, string> = {};
+    for (const [k, v] of Object.entries(rec as Record<string, unknown>)) {
+      out[String(k)] = String(v);
+    }
+    return out;
+  }
+
+  const coerce = (n: unknown): AccessibilityNode | undefined => {
+    if (!n || typeof n !== "object") return undefined;
+    const obj = n as Record<string, unknown>;
+    const role = String(obj.role ?? "generic");
+    const text = obj.text === undefined || obj.text === null ? undefined : String(obj.text);
+    const attributes = coerceRecord(obj.attributes);
+    const childArray = Array.isArray(obj.children) ? obj.children : [];
+    const children = childArray.map(coerce).filter(Boolean) as AccessibilityNode[];
+    const rawDescriptor = obj.rawDescriptor === undefined || obj.rawDescriptor === null
+      ? ""
+      : String(obj.rawDescriptor);
+    return { role, text, attributes, children, rawDescriptor };
+  };
+
+  const result: AccessibilityNode[] = [];
+  for (const item of input) {
+    const coerced = coerce(item);
+    if (coerced) result.push(coerced);
+  }
+  return result;
+}
+
+export const snapshotFilterJsonTool = tool({
+  description: "Further filter a previously stored JSON result from snapshot_get_and_filter by role/text/attributes.",
+  inputSchema: snapshotFilterJsonInputSchema,
+  outputSchema: snapshotGetAndFilterOutputSchema,
+  execute: ({ variable, filter, includeSubtree, mode, maxResults, storeInVariable }) => {
+    spinner.addText("Running snapshot_filter_json...");
+    try {
+      const MAX_JSON_CHARS = 120_000;
+      let __argsStr = "";
+      try {
+        __argsStr = JSON.stringify({ variable, filter, includeSubtree, mode, maxResults, storeInVariable });
+      } catch {
+        __argsStr = String({ variable, filter, includeSubtree, mode, maxResults, storeInVariable });
+      }
+      const __start = Date.now();
+      logger.info("Tool", `🔎 snapshot_filter_json: variable='${variable}', mode='${mode}'`);
+      logger.debug("Tool", `snapshot_filter_json args: ${__argsStr}`);
+
+      const raw = getVariable(variable);
+      if (!raw) {
+        return { success: false, count: 0, reason: `Variable '${variable}' not found` };
+      }
+
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(raw);
+      } catch (err) {
+        return { success: false, count: 0, reason: `Failed to parse JSON: ${(err as Error).message}` };
+      }
+
+      const rootNodes = normalizeNodesFromJson(parsed);
+      const matches = findMatches(rootNodes, {
+        role: filter.role,
+        text: filter.text,
+        attributes: filter.attributes,
+        includeSubtree,
+        mode,
+        maxResults,
+      });
+
+      const json = JSON.stringify(matches, null, 2);
+      if (json.length > MAX_JSON_CHARS) {
+        const reason = `Filtered result too large (${json.length} > ${MAX_JSON_CHARS} chars). ` +
+          "Narrow your filter: restrict 'role'/'text'/'attributes', avoid 'includeSubtree' unless required, or set 'maxResults'.";
+        return { success: false, count: matches.length, reason };
+      }
+
+      if (storeInVariable) {
+        setVariable(storeInVariable, json);
+      }
+      const __dur = Date.now() - __start;
+      logger.info("Tool", `🔎 snapshot_filter_json: ${matches.length} match(es) in ${__dur}ms`);
       return { success: true, count: matches.length, json };
     } finally {
       spinner.removeText();

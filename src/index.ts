@@ -4,6 +4,7 @@ import { WorkflowRunner } from "./runner.ts";
 import { exit } from "./utils.ts";
 import { setLogLevel } from "./log.ts";
 import { connectPlaywrightMCP } from "./tools/mcp/playwright-mcp.ts";
+import { resetVariables } from "./tools/variable.ts";
 
 const program = new Command();
 
@@ -12,6 +13,8 @@ async function setup() {
   if (options.debug) {
     setLogLevel("debug");
   }
+
+  resetVariables();
 
   const mcp = await connectPlaywrightMCP();
 
@@ -33,6 +36,17 @@ program
     const { mcp } = await setup();
     const recorder = new WorkflowRecorder(mcp);
     await recorder.interactiveRecord();
+    await exit();
+  });
+
+program
+  .command("resume")
+  .description("Resume recording an existing workflow")
+  .argument("<name>", "Name of the workflow to resume")
+  .action(async (name: string) => {
+    const { mcp } = await setup();
+    const recorder = new WorkflowRecorder(mcp);
+    await recorder.resumeRecording(name);
     await exit();
   });
 

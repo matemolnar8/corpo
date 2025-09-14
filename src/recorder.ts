@@ -1,6 +1,7 @@
 import { generateText } from "ai";
-import { saveWorkflow, Workflow, WorkflowStep } from "./workflows.ts";
+import { loadWorkflow, saveWorkflow, Workflow, WorkflowStep } from "./workflows.ts";
 import { PlaywrightMCP } from "./tools/mcp/playwright-mcp.ts";
+import { WorkflowRunner } from "./runner.ts";
 import { RECORDER_SYSTEM_PROMPT } from "./prompts.ts";
 import {
   accumulateTokenUsage,
@@ -11,8 +12,8 @@ import {
 } from "./utils.ts";
 import { logger, spinner } from "./log.ts";
 import { userInputTool } from "./tools/user-input.ts";
-import { listVariablesTool, resetVariables, retrieveVariableTool, storeVariableTool } from "./tools/variable.ts";
-import { snapshotGetAndFilterTool } from "./tools/snapshot-get-and-filter.ts";
+import { listVariablesTool, retrieveVariableTool, storeVariableTool } from "./tools/variable.ts";
+import { snapshotFilterJsonTool, snapshotGetAndFilterTool } from "./tools/snapshot.ts";
 import { input, select } from "./cli_prompts.ts";
 import { model, stopWhen } from "./model.ts";
 import { listSecretsTool, loadSecrets } from "./tools/secret.ts";
@@ -20,8 +21,7 @@ import { listSecretsTool, loadSecrets } from "./tools/secret.ts";
 export class WorkflowRecorder {
   constructor(private mcp: PlaywrightMCP) {}
 
-  async interactiveRecord(): Promise<void> {
-    resetVariables();
+  async interactiveRecord(existingWorkflow?: Workflow): Promise<void> {
     await loadSecrets();
     const mcpTools = await this.mcp.getAiTools();
     const allTools = {
@@ -30,29 +30,45 @@ export class WorkflowRecorder {
       store_variable: storeVariableTool,
       retrieve_variable: retrieveVariableTool,
       snapshot_get_and_filter: snapshotGetAndFilterTool,
+      snapshot_filter_json: snapshotFilterJsonTool,
       list_variables: listVariablesTool,
       list_secrets: listSecretsTool,
     };
 
     logger.info("Recorder", `Exposed tools: ${Object.keys(allTools).join(", ") || "<none>"}`);
-    const steps: WorkflowStep[] = [];
+    const steps: WorkflowStep[] = existingWorkflow ? [...existingWorkflow.steps] : [];
     const tokenSummary = initTokenUsageSummary();
 
-    const workflowName = input({
-      message: "Workflow name:",
-      required: true,
-    });
-    const workflowDescription = input({
-      message: "Description (optional):",
-    });
+    let workflow: Workflow;
+    if (existingWorkflow) {
+      workflow = { ...existingWorkflow };
+      logger.info("Recorder", `Resuming workflow '${existingWorkflow.name}'`);
+      logger.info("Recorder", `Existing steps: ${existingWorkflow.steps.length}`);
+    } else {
+      const workflowName = input({
+        message: "Workflow name:",
+        required: true,
+      });
+      const workflowDescription = input({
+        message: "Description (optional):",
+      });
+
+      workflow = {
+        name: workflowName,
+        description: workflowDescription || undefined,
+        createdAt: new Date().toISOString(),
+        steps: [],
+      };
+    }
 
     logger.debug("Recorder", `System prompt: ${RECORDER_SYSTEM_PROMPT}`);
 
     // Guidance
-    logger.info(
-      "Recorder",
-      "Recording started. Describe each step in natural language (e.g., 'open https://intranet and sign in', 'click the Bookings tab', 'copy the booking dates'). The agent will pick a tool and arguments. Type 'done' to finish, or 'cancel' to abort.",
-    );
+    const guidanceMessage = existingWorkflow
+      ? "Resuming recording. The existing steps are loaded. Describe each new step in natural language. The agent will pick a tool and arguments. Type 'done' to finish, or 'cancel' to abort."
+      : "Recording started. Describe each step in natural language (e.g., 'open https://intranet and sign in', 'click the Bookings tab', 'copy the booking dates'). The agent will pick a tool and arguments. Type 'done' to finish, or 'cancel' to abort.";
+
+    logger.info("Recorder", guidanceMessage);
 
     // Loop adding steps
     while (true) {
@@ -75,7 +91,7 @@ export class WorkflowRecorder {
       while (!accepted) {
         const previousStepsSummary = buildCompactPreviousStepsSummary(steps, steps.length);
         const prevSection = previousStepsSummary
-          ? `Context (previous steps):\n\n\`\`\`\n${previousStepsSummary}\n\`\`\`\n\n`
+          ? `Context (previous steps, do not execute them):\n\n\`\`\`\n${previousStepsSummary}\n\`\`\`\n\n`
           : "";
         const system = RECORDER_SYSTEM_PROMPT;
 
@@ -150,15 +166,50 @@ ${refinement ? `\nRefinement: ${refinement}` : ""}
       spinner.stop();
     }
 
-    const workflow: Workflow = {
-      name: workflowName,
-      description: workflowDescription || undefined,
-      createdAt: new Date().toISOString(),
-      steps,
-    };
+    // Update workflow with final steps
+    workflow.steps = steps;
 
     logTokenUsageSummary("Recorder", tokenSummary);
     const file = await saveWorkflow(workflow);
     logger.success("Recorder", `Saved workflow to ${file}`);
+  }
+
+  async resumeRecording(workflowName: string): Promise<void> {
+    // Load existing workflow
+    let existingWorkflow: Workflow;
+    try {
+      existingWorkflow = await loadWorkflow(workflowName);
+    } catch (error) {
+      logger.error(
+        "Recorder",
+        `Failed to load workflow '${workflowName}': ${error instanceof Error ? error.message : String(error)}`,
+      );
+      return;
+    }
+
+    // First, run all existing steps to get back to the state where we left off
+    if (existingWorkflow.steps.length > 0) {
+      logger.info(
+        "Recorder",
+        `Running ${existingWorkflow.steps.length} existing steps to resume from current state...`,
+      );
+
+      const runner = new WorkflowRunner(this.mcp);
+      try {
+        await runner.run(workflowName, true); // Run in auto mode
+        logger.success("Recorder", "Existing steps completed successfully");
+      } catch (error) {
+        logger.error(
+          "Recorder",
+          `Failed to run existing steps: ${error instanceof Error ? error.message : String(error)}`,
+        );
+        logger.warn("Recorder", "You may need to manually navigate to the correct state before continuing recording");
+      }
+    } else {
+      logger.info("Recorder", "No existing steps to run, starting fresh recording");
+    }
+
+    // Now start recording new steps
+    await this.interactiveRecord(existingWorkflow);
   }
 }
