@@ -1,6 +1,7 @@
 import { modelId } from "../src/model.ts";
 import { WorkflowRunError, WorkflowRunner, WorkflowRunResult } from "../src/runner.ts";
 import { connectPlaywrightMCP, disconnectPlaywrightMCP } from "../src/tools/mcp/playwright-mcp.ts";
+import { resetVariables } from "../src/tools/variable.ts";
 import { exit } from "../src/utils.ts";
 import { parseArgs } from "@std/cli/parse-args";
 
@@ -32,6 +33,7 @@ export type EvalRunSummary = {
 };
 
 export async function runEval(config: EvalConfig): Promise<EvalRunSummary> {
+  resetVariables();
   const mcp = await connectPlaywrightMCP({ headless: config.headless ?? true });
   try {
     const runner = new WorkflowRunner(mcp);
