@@ -2,20 +2,23 @@ import { parseArgs } from "@std/cli/parse-args";
 
 // Edit this array to control which models are evaluated.
 const MODELS: string[] = [
-  "openai/gpt-oss-20b",
-  "google/gemini-2.5-flash",
-  "anthropic/claude-sonnet-4",
-  "anthropic/claude-3.5-sonnet",
   "anthropic/claude-3.7-sonnet",
-  "openai/gpt-4.1-mini",
-  "openai/gpt-oss-120b",
-  "openai/o4-mini",
-  "openai/gpt-5-mini",
+  "anthropic/claude-sonnet-4",
+  "google/gemini-2.5-flash",
   "google/gemini-2.5-pro",
-  "google/gemini-2.5-flash-lite",
-  "meta-llama/llama-4-maverick",
-  "openrouter/sonoma-sky-alpha",
-  "openrouter/sonoma-dusk-alpha",
+  "moonshotai/kimi-k2-0905",
+  "openai/gpt-5-mini",
+  // "anthropic/claude-3.5-sonnet",
+  // "google/gemini-2.5-flash-lite",
+  // "meta-llama/llama-4-maverick",
+  // "openai/gpt-4.1-mini",
+  // "openai/gpt-oss-120b",
+  // "openai/gpt-oss-20b",
+  // "openai/o4-mini",
+  // "openrouter/sonoma-dusk-alpha",
+  // "openrouter/sonoma-sky-alpha",
+  // "qwen/qwen-plus-2025-07-28",
+  // "qwen/qwen3-next-80b-a3b-instruct",
 ];
 
 type ParsedArgs = { evalName: string; repeat: number };
