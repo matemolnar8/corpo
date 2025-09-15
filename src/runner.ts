@@ -1,7 +1,7 @@
 import { generateText } from "ai";
 import { listWorkflows, loadWorkflow } from "./workflows.ts";
 import { PlaywrightMCP } from "./tools/mcp/playwright-mcp.ts";
-import { RUNNER_SYSTEM_PROMPT } from "./prompts.ts";
+import { resolveRunnerSystemPrompt } from "./prompts.ts";
 import {
   accumulateTokenUsage,
   buildCompactPreviousStepsSummary,
@@ -28,6 +28,7 @@ export type WorkflowRunResult = {
   tokenSummary: TokenUsageSummary;
   finalText?: string;
   attemptsPerStep: number[];
+  promptVariant?: string;
 };
 
 export class WorkflowRunError extends Error {
@@ -66,7 +67,9 @@ export class WorkflowRunner {
     let finalStepText: string | undefined = undefined;
     const attemptsPerStep: number[] = [];
 
-    logger.debug("Runner", `System prompt: ${RUNNER_SYSTEM_PROMPT}`);
+    const { name: promptVariantName, system: systemPrompt } = resolveRunnerSystemPrompt();
+    logger.info("Runner", `Prompt variant: ${promptVariantName}`);
+    logger.debug("Runner", `System prompt: ${systemPrompt}`);
 
     for (let i = 0; i < wf.steps.length; i += 1) {
       const step = wf.steps[i];
@@ -93,15 +96,15 @@ export class WorkflowRunner {
 
           const previousStepsSummary = buildCompactPreviousStepsSummary(wf.steps, i);
           const prevSection = previousStepsSummary
-            ? `Context (previous steps, do not execute them):\n\n\`\`\`\n${previousStepsSummary}\n\`\`\`\n`
+            ? `Context (Previous steps, only for reference):\n\n\`\`\`\n${previousStepsSummary}\n\`\`\`\n`
             : "";
 
-          const system = RUNNER_SYSTEM_PROMPT;
+          const system = systemPrompt;
 
           const prompt = `
 ${prevSection}
 
-Perform the following step:
+Execute the following step:
 \`\`\`
 ${step.instruction}
 
@@ -155,6 +158,7 @@ ${refinement ? `\nRefinement: ${refinement}` : ""}
                 tokenSummary,
                 finalText: rawText || undefined,
                 attemptsPerStep,
+                promptVariant: promptVariantName,
               };
               throw new WorkflowRunError(partial, message);
             } else if (attempts >= maxAttempts) {
@@ -172,6 +176,7 @@ ${refinement ? `\nRefinement: ${refinement}` : ""}
                 tokenSummary,
                 finalText: rawText || undefined,
                 attemptsPerStep,
+                promptVariant: promptVariantName,
               };
               throw new WorkflowRunError(partial, message);
             } else {
@@ -229,6 +234,7 @@ ${refinement ? `\nRefinement: ${refinement}` : ""}
                 tokenSummary,
                 finalText: rawText || undefined,
                 attemptsPerStep,
+                promptVariant: promptVariantName,
               };
               throw new WorkflowRunError(partial, message);
             }
@@ -260,6 +266,7 @@ ${refinement ? `\nRefinement: ${refinement}` : ""}
       tokenSummary,
       finalText: (finalStepText ?? "").trim() || undefined,
       attemptsPerStep,
+      promptVariant: promptVariantName,
     };
   }
 

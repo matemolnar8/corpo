@@ -30,6 +30,7 @@ export type EvalRunSummary = {
   attemptsPerStep: number[];
   modelId: string;
   timestamp: string;
+  promptVariant?: string;
 };
 
 export async function runEval(config: EvalConfig): Promise<EvalRunSummary> {
@@ -51,6 +52,7 @@ export async function runEval(config: EvalConfig): Promise<EvalRunSummary> {
       attemptsPerStep: result.attemptsPerStep,
       modelId,
       timestamp: new Date().toISOString(),
+      promptVariant: result.promptVariant,
     };
   } catch (e) {
     console.error(e);
@@ -67,6 +69,7 @@ export async function runEval(config: EvalConfig): Promise<EvalRunSummary> {
         attemptsPerStep: e.result.attemptsPerStep,
         modelId,
         timestamp: new Date().toISOString(),
+        promptVariant: e.result.promptVariant,
       };
     }
     return {
@@ -81,6 +84,7 @@ export async function runEval(config: EvalConfig): Promise<EvalRunSummary> {
       attemptsPerStep: [],
       modelId,
       timestamp: new Date().toISOString(),
+      promptVariant: undefined,
     };
   } finally {
     await disconnectPlaywrightMCP();
@@ -134,6 +138,7 @@ if (import.meta.main) {
           workflow: summary.workflowName,
           modelId: summary.modelId,
           timestamp: summary.timestamp,
+          promptVariant: summary.promptVariant,
           steps: summary.steps,
           elapsedMs: summary.elapsedMs,
           tokens: {

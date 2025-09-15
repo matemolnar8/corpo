@@ -127,6 +127,10 @@
           <select id="workflow"></select>
         </label>
         <label
+          >Variant
+          <select id="variant"></select>
+        </label>
+        <label
           >Filter Model
           <input
             id="modelFilter"
@@ -174,6 +178,7 @@
           <th class="sortable" data-sort-key="workflow">Workflow</th>
           <th class="sortable" data-sort-key="eval">Eval</th>
           <th class="sortable" data-sort-key="model">Model</th>
+          <th class="sortable" data-sort-key="variant">Variant</th>
           <th class="sortable" data-sort-key="status">Status</th>
           <th class="sortable" data-sort-key="steps">Steps</th>
           <th class="sortable" data-sort-key="elapsed">Elapsed (s)</th>
@@ -194,6 +199,7 @@
       const $ = (s) => document.querySelector(s);
       const rows = $("#rows");
       const workflowSel = $("#workflow");
+      const variantSel = $("#variant");
       const modelFilter = $("#modelFilter");
       const search = $("#search");
       const reloadBtn = $("#reload");
@@ -209,6 +215,7 @@
       // Read initial query params
       const initialParams = new URLSearchParams(location.search);
       const initialWorkflow = initialParams.get("workflow") || "";
+      const initialVariant = initialParams.get("variant") || "";
       const initialModel = initialParams.get("model") || "";
       const initialSearch = initialParams.get("search") || "";
       if (initialModel) modelFilter.value = initialModel;
@@ -222,6 +229,7 @@
           <td>${r.workflowName}</td>
           <td>${r.evalName || ""}</td>
           <td>${r.modelId || ""}</td>
+          <td>${r.promptVariant || ""}</td>
           <td><span class="${statusClass}">${
           r.pass ? "PASS" : "FAIL"
         }</span></td>
@@ -235,10 +243,13 @@
 
       function render(data) {
         const wf = workflowSel.value;
+        const vv = variantSel.value;
         const mf = modelFilter.value.trim().toLowerCase();
         const q = search.value.trim().toLowerCase();
         let filtered = data;
         if (wf) filtered = filtered.filter((r) => r.workflowName === wf);
+        if (vv)
+          filtered = filtered.filter((r) => (r.promptVariant || "") === vv);
         if (mf)
           filtered = filtered.filter((r) =>
             (r.modelId || "").toLowerCase().includes(mf)
@@ -295,10 +306,13 @@
       function updateUrlFromControls() {
         const params = new URLSearchParams(location.search);
         const wf = workflowSel.value;
+        const vv = variantSel.value;
         const mf = modelFilter.value.trim();
         const q = search.value.trim();
         if (wf) params.set("workflow", wf);
         else params.delete("workflow");
+        if (vv) params.set("variant", vv);
+        else params.delete("variant");
         if (mf) params.set("model", mf);
         else params.delete("model");
         if (q) params.set("search", q);
@@ -391,6 +405,8 @@
             return r.evalName || "";
           case "model":
             return r.modelId || "";
+          case "variant":
+            return r.promptVariant || "";
           case "status":
             return r.pass ? 1 : 0;
           case "steps":
@@ -474,6 +490,7 @@
           );
           all = arrays.flat();
           populateWorkflows(all);
+          populateVariants(all);
           render(all);
         } catch (e) {
           console.warn("Load from server failed:", e);
@@ -498,7 +515,29 @@
         }
       }
 
+      function populateVariants(data) {
+        const names = Array.from(
+          new Set(data.map((r) => r.promptVariant || ""))
+        )
+          .filter((x) => x)
+          .sort();
+        const previous = variantSel.value;
+        variantSel.innerHTML = [
+          '<option value="">All</option>',
+          ...names.map((n) => `<option>${n}</option>`),
+        ].join("");
+        if (previous && names.includes(previous)) {
+          variantSel.value = previous;
+        } else if (initialVariant && names.includes(initialVariant)) {
+          variantSel.value = initialVariant;
+        }
+      }
+
       workflowSel.addEventListener("change", () => {
+        updateUrlFromControls();
+        render(all);
+      });
+      variantSel.addEventListener("change", () => {
         updateUrlFromControls();
         render(all);
       });

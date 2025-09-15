@@ -41,7 +41,7 @@ export const RECORDER_SPECIFIC_PROMPT = `
   verify the confirmation toast appears with role="status" and text includes "Saved"
   ENDREPRO
 - The REPRO block should only mention specific elements if they are expected to be stable; otherwise describe how to locate them dynamically.
-- The REPRO block MUST include the tools used to perform the step.
+- The REPRO block MUST always include the tools used to perform the step.
 - If the instruction is to click text (e.g., 'Bookings' or 'leading article heading'), first snapshot and analyze to find a stable descriptor, then click using that descriptor.`;
 
 // Runner-specific additions
@@ -54,3 +54,30 @@ ${RECORDER_SPECIFIC_PROMPT}`;
 
 export const RUNNER_SYSTEM_PROMPT = `${SHARED_SYSTEM_PROMPT_BASE}
 ${RUNNER_SPECIFIC_PROMPT}`;
+
+// Prompt variant support for A/B testing
+// "base" variant is the existing RUNNER_SYSTEM_PROMPT. Additional variants can be added here.
+const RUNNER_PROMPT_VARIANTS: Record<string, string> = {
+  base: RUNNER_SYSTEM_PROMPT,
+
+  v2: `${COMMON_SYSTEM_PROMPT_START}
+
+  Rules:
+  ${COMMON_RULES}
+  ${SNAPSHOT_GUIDANCE}
+  ${TOOL_RULES}
+  
+${RUNNER_SPECIFIC_PROMPT}`,
+};
+
+export function resolveRunnerSystemPrompt(preferredVariant?: string): { name: string; system: string } {
+  const envVariant = Deno.env.get("PROMPT_VARIANT") ?? undefined;
+  const variant = (preferredVariant ?? envVariant ?? "base").trim();
+  const system = RUNNER_PROMPT_VARIANTS[variant] ?? RUNNER_PROMPT_VARIANTS.base;
+  const name = RUNNER_PROMPT_VARIANTS[variant] ? variant : "base";
+  return { name, system };
+}
+
+export function listRunnerPromptVariants(): string[] {
+  return Object.keys(RUNNER_PROMPT_VARIANTS);
+}

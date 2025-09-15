@@ -31,7 +31,12 @@ function parseBatchArgs(): ParsedArgs {
   return { evalName, repeat };
 }
 
-async function runEvalOnceForModel(evalName: string, modelId: string, repeat: number): Promise<number> {
+async function runEvalOnceForModel(
+  evalName: string,
+  modelId: string,
+  repeat: number,
+  promptVariant?: string,
+): Promise<number> {
   const evalRunnerPath = new URL("./eval_runner.ts", import.meta.url).pathname;
 
   const denoArgs = [
@@ -51,7 +56,7 @@ async function runEvalOnceForModel(evalName: string, modelId: string, repeat: nu
     args: denoArgs,
     stdout: "inherit",
     stderr: "inherit",
-    env: { ...Deno.env.toObject(), MODEL_ID: modelId },
+    env: { ...Deno.env.toObject(), MODEL_ID: modelId, ...(promptVariant ? { PROMPT_VARIANT: promptVariant } : {}) },
   });
 
   const child = command.spawn();
@@ -61,15 +66,21 @@ async function runEvalOnceForModel(evalName: string, modelId: string, repeat: nu
 
 if (import.meta.main) {
   const { evalName, repeat } = parseBatchArgs();
+  const promptVariantsEnv = (Deno.env.get("PROMPT_VARIANTS") ?? "").trim();
+  const promptVariants = promptVariantsEnv
+    ? promptVariantsEnv.split(",").map((v) => v.trim()).filter((v) => v.length > 0)
+    : [Deno.env.get("PROMPT_VARIANT") ?? "base"];
 
   let anyFail = false;
-  for (const model of MODELS) {
-    console.log("");
-    console.log("============================================================");
-    console.log(`Running eval '${evalName}' with model '${model}' (repeat=${repeat})`);
-    console.log("============================================================");
-    const code = await runEvalOnceForModel(evalName, model, repeat);
-    if (code !== 0) anyFail = true;
+  for (const variant of promptVariants) {
+    for (const model of MODELS) {
+      console.log("");
+      console.log("============================================================");
+      console.log(`Running eval '${evalName}' with model '${model}' (repeat=${repeat}) variant='${variant}'`);
+      console.log("============================================================");
+      const code = await runEvalOnceForModel(evalName, model, repeat, variant);
+      if (code !== 0) anyFail = true;
+    }
   }
 
   if (anyFail) Deno.exit(1);
