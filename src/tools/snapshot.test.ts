@@ -204,3 +204,47 @@ Deno.test("snapshot_filter_json supports chained filtering", async () => {
   expect(finalParsed[0].attributes.kind).toBe("a");
   expect(String(finalParsed[0].text ?? "")).toContain("Item");
 });
+
+Deno.test("snapshot_filter_json supports regex text filtering with flags", async () => {
+  resetVariables();
+
+  // Build a small synthetic YAML snapshot and filter it once to JSON
+  const yaml = `table:\n  - row "Item A"\n  - row "item b"\n  - row "Misc"`;
+  setVariable("synthetic_yaml_regex", yaml);
+
+  await snapshotGetAndFilterTool.execute!(
+    {
+      variable: "synthetic_yaml_regex",
+      filter: { role: "row" },
+      includeSubtree: false,
+      mode: "all",
+      storeInVariable: "rows_json_regex",
+    },
+    { messages: [], toolCallId: crypto.randomUUID() },
+  );
+
+  // Re-filter with a case-insensitive regex that should match both 'Item A' and 'item b'
+  const second = await snapshotFilterJsonTool.execute!(
+    {
+      variable: "rows_json_regex",
+      filter: { text: { regex: "^item [ab]$", flags: "i" } },
+      includeSubtree: false,
+      mode: "all",
+      storeInVariable: "regex_items_only_json",
+    },
+    { messages: [], toolCallId: crypto.randomUUID() },
+  );
+
+  const { success, count } = second as { success: boolean; count: number };
+  expect(success).toBe(true);
+  expect(count).toBe(2);
+
+  const regexItemsOnly = getVariable("regex_items_only_json");
+  expect(regexItemsOnly).toBeDefined();
+  const parsed = JSON.parse(regexItemsOnly!);
+  expect(Array.isArray(parsed)).toBe(true);
+  expect(parsed.length).toBe(2);
+  const texts = parsed.map((n: { text?: string }) => String(n.text ?? ""));
+  expect(texts).toContain("Item A");
+  expect(texts).toContain("item b");
+});

@@ -323,7 +323,7 @@ const snapshotFilterJsonInputSchema = z.object({
         ])
         .optional()
         .describe(
-          "Filter by accessible name/text using equals, contains, or regex.",
+          "Filter by accessible name/text using equals, contains, or regex. Use the simplest filter possible.",
         ),
       attributes: z
         .record(z.string(), z.string())
