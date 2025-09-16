@@ -242,22 +242,7 @@
       }
 
       function render(data) {
-        const wf = workflowSel.value;
-        const vv = variantSel.value;
-        const mf = modelFilter.value.trim().toLowerCase();
-        const q = search.value.trim().toLowerCase();
-        let filtered = data;
-        if (wf) filtered = filtered.filter((r) => r.workflowName === wf);
-        if (vv)
-          filtered = filtered.filter((r) => (r.promptVariant || "") === vv);
-        if (mf)
-          filtered = filtered.filter((r) =>
-            (r.modelId || "").toLowerCase().includes(mf)
-          );
-        if (q)
-          filtered = filtered.filter((r) =>
-            JSON.stringify(r).toLowerCase().includes(q)
-          );
+        const filtered = getFilteredData(data);
 
         // Sort according to current mainSort
         const dir = mainSort.dir === "asc" ? 1 : -1;
@@ -301,6 +286,26 @@
             .join("")}
         `;
         renderModelTable(filtered);
+      }
+
+      function getFilteredData(data) {
+        const wf = workflowSel.value;
+        const vv = variantSel.value;
+        const mf = modelFilter.value.trim().toLowerCase();
+        const q = search.value.trim().toLowerCase();
+        let filtered = data;
+        if (wf) filtered = filtered.filter((r) => r.workflowName === wf);
+        if (vv)
+          filtered = filtered.filter((r) => (r.promptVariant || "") === vv);
+        if (mf)
+          filtered = filtered.filter((r) =>
+            (r.modelId || "").toLowerCase().includes(mf)
+          );
+        if (q)
+          filtered = filtered.filter((r) =>
+            JSON.stringify(r).toLowerCase().includes(q)
+          );
+        return filtered;
       }
 
       function updateUrlFromControls() {
@@ -579,7 +584,8 @@
           } else {
             modelSort = { key, dir: "asc" };
           }
-          renderModelTable(all);
+          // Preserve current filters when sorting the model table
+          renderModelTable(getFilteredData(all));
         });
       }
 
