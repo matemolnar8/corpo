@@ -3,7 +3,7 @@ import type { EvalConfig } from "../eval_runner.ts";
 const days = [11, 12, 13, 14, 25, 27, 28];
 
 export const config: EvalConfig = {
-  workflowName: "commuting3_fixed",
+  workflowName: "commuting4_fixed",
   headless: true,
   verify: (result) => {
     const text = (result.finalText ?? "").toLowerCase();

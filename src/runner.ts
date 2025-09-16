@@ -17,7 +17,7 @@ import { snapshotFilterJsonTool, snapshotGetAndFilterTool } from "./tools/snapsh
 import { listSecretsTool } from "./tools/secret.ts";
 import { green } from "@std/fmt/colors";
 import { input, select } from "./cli_prompts.ts";
-import { model, stopWhen } from "./model.ts";
+import { runnerModel, stopWhen } from "./model.ts";
 import { loadSecrets } from "./tools/secret.ts";
 
 export type WorkflowRunResult = {
@@ -119,7 +119,7 @@ ${refinement ? `\nRefinement: ${refinement}` : ""}
 
           spinner.addText("Thinking...");
           const result = await generateText({
-            model: model,
+            model: runnerModel,
             tools: allTools,
             system,
             prompt,

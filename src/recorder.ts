@@ -15,7 +15,7 @@ import { userInputTool } from "./tools/user-input.ts";
 import { listVariablesTool, retrieveVariableTool, storeVariableTool } from "./tools/variable.ts";
 import { snapshotFilterJsonTool, snapshotGetAndFilterTool } from "./tools/snapshot.ts";
 import { input, select } from "./cli_prompts.ts";
-import { model, stopWhen } from "./model.ts";
+import { recorderModel, stopWhen } from "./model.ts";
 import { listSecretsTool, loadSecrets } from "./tools/secret.ts";
 
 export class WorkflowRecorder {
@@ -109,7 +109,7 @@ ${refinement ? `\nRefinement: ${refinement}` : ""}
 
         spinner.addText("Thinking...");
         const result = await generateText({
-          model: model,
+          model: recorderModel,
           tools: allTools,
           system,
           prompt,

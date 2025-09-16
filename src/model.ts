@@ -6,7 +6,17 @@ const openrouter = createOpenRouter({
 });
 
 // Model configuration
-// Default model can be overridden via env var MODEL_ID for easy A/B comparisons
-export const modelId = Deno.env.get("MODEL_ID") ?? "google/gemini-2.5-flash";
+// Global default can be overridden via env var MODEL_ID.
+// Recorder and Runner can be configured independently via RECORDER_MODEL_ID and RUNNER_MODEL_ID.
+export const defaultModelId = "google/gemini-2.5-flash";
+export const modelId = Deno.env.get("MODEL_ID") ?? defaultModelId;
+
+export const recorderModelId = Deno.env.get("RECORDER_MODEL_ID") ?? modelId;
+export const runnerModelId = Deno.env.get("RUNNER_MODEL_ID") ?? modelId;
+
+export const recorderModel = openrouter(recorderModelId);
+export const runnerModel = openrouter(runnerModelId);
+
+// Deprecated: kept for backward compatibility with any legacy imports
 export const model = openrouter(modelId);
 export const stopWhen = stepCountIs(30);
