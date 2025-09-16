@@ -11,12 +11,42 @@
         --space-3: 12px;
         --space-4: 16px;
         --space-5: 24px;
+        /* Light theme (default) */
+        --bg: #ffffff;
+        --text: #111827;
+        --card-bg: #ffffff;
+        --border: #e5e7eb;
+        --th-bg: #f9fafb;
+        --zebra: #fafafa;
+        --muted: #6b7280;
+        --ok-fg: #065f46;
+        --ok-bg: #ecfdf5;
+        --fail-fg: #991b1b;
+        --fail-bg: #fef2f2;
+        color-scheme: light dark;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0b0f19;
+          --text: #e5e7eb;
+          --card-bg: #111827;
+          --border: #1f2937;
+          --th-bg: #111827;
+          --zebra: #0f172a;
+          --muted: #9ca3af;
+          --ok-fg: #34d399;
+          --ok-bg: #064e3b;
+          --fail-fg: #fca5a5;
+          --fail-bg: #450a0a;
+        }
       }
       body {
         font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu,
           Cantarell, Noto Sans, Helvetica, Arial, Apple Color Emoji,
           Segoe UI Emoji, Segoe UI Symbol;
         margin: var(--space-5);
+        background: var(--bg);
+        color: var(--text);
       }
       header {
         display: flex;
@@ -47,12 +77,12 @@
       }
       th,
       td {
-        border: 1px solid #e5e7eb;
+        border: 1px solid var(--border);
         padding: var(--space-2);
         text-align: left;
       }
       th {
-        background: #f9fafb;
+        background: var(--th-bg);
         position: sticky;
         top: 0;
       }
@@ -67,18 +97,18 @@
         content: " \25BC"; /* ▼ */
       }
       tbody tr:nth-child(odd) {
-        background: #fafafa;
+        background: var(--zebra);
       }
       .ok {
-        color: #065f46;
-        background: #ecfdf5;
+        color: var(--ok-fg);
+        background: var(--ok-bg);
         padding: var(--space-1) var(--space-2);
         border-radius: 4px;
         display: inline-block;
       }
       .fail {
-        color: #991b1b;
-        background: #fef2f2;
+        color: var(--fail-fg);
+        background: var(--fail-bg);
         padding: var(--space-1) var(--space-2);
         border-radius: 4px;
         display: inline-block;
@@ -100,13 +130,13 @@
         margin-top: var(--space-4);
       }
       .card {
-        border: 1px solid #e5e7eb;
+        border: 1px solid var(--border);
         border-radius: 8px;
         padding: var(--space-3);
-        background: white;
+        background: var(--card-bg);
       }
       .muted {
-        color: #6b7280;
+        color: var(--muted);
       }
       .hidden {
         display: none;
@@ -243,20 +273,48 @@
 
       function render(data) {
         const filtered = getFilteredData(data);
+        const sorted = sortMainData(filtered, mainSort);
+        renderMainTable(sorted);
+        renderSummaryCards(filtered);
+        renderModelTable(filtered);
+      }
 
-        // Sort according to current mainSort
-        const dir = mainSort.dir === "asc" ? 1 : -1;
-        filtered.sort((a, b) => {
-          const av = getMainSortValue(a, mainSort.key);
-          const bv = getMainSortValue(b, mainSort.key);
+      function getFilteredData(data) {
+        const wf = workflowSel.value;
+        const vv = variantSel.value;
+        const mf = modelFilter.value.trim().toLowerCase();
+        const q = search.value.trim().toLowerCase();
+        let filtered = data;
+        if (wf) filtered = filtered.filter((r) => r.workflowName === wf);
+        if (vv)
+          filtered = filtered.filter((r) => (r.promptVariant || "") === vv);
+        if (mf)
+          filtered = filtered.filter((r) =>
+            (r.modelId || "").toLowerCase().includes(mf)
+          );
+        if (q)
+          filtered = filtered.filter((r) =>
+            JSON.stringify(r).toLowerCase().includes(q)
+          );
+        return filtered;
+      }
+
+      function sortMainData(data, sort) {
+        const dir = sort.dir === "asc" ? 1 : -1;
+        return data.slice().sort((a, b) => {
+          const av = getMainSortValue(a, sort.key);
+          const bv = getMainSortValue(b, sort.key);
           return compareValues(av, bv) * dir;
         });
-        rows.innerHTML = filtered.map(formatRow).join("");
-        raw.textContent = JSON.stringify(filtered, null, 2);
+      }
 
+      function renderMainTable(data) {
+        rows.innerHTML = data.map(formatRow).join("");
+        raw.textContent = JSON.stringify(data, null, 2);
         updateMainHeaderIndicators();
+      }
 
-        // Summary cards
+      function renderSummaryCards(filtered) {
         const total = filtered.length;
         const pass = filtered.filter((r) => r.pass).length;
         const fail = total - pass;
@@ -285,27 +343,6 @@
             )
             .join("")}
         `;
-        renderModelTable(filtered);
-      }
-
-      function getFilteredData(data) {
-        const wf = workflowSel.value;
-        const vv = variantSel.value;
-        const mf = modelFilter.value.trim().toLowerCase();
-        const q = search.value.trim().toLowerCase();
-        let filtered = data;
-        if (wf) filtered = filtered.filter((r) => r.workflowName === wf);
-        if (vv)
-          filtered = filtered.filter((r) => (r.promptVariant || "") === vv);
-        if (mf)
-          filtered = filtered.filter((r) =>
-            (r.modelId || "").toLowerCase().includes(mf)
-          );
-        if (q)
-          filtered = filtered.filter((r) =>
-            JSON.stringify(r).toLowerCase().includes(q)
-          );
-        return filtered;
       }
 
       function updateUrlFromControls() {
