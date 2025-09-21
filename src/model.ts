@@ -8,7 +8,7 @@ const openrouter = createOpenRouter({
 // Model configuration
 // Global default can be overridden via env var MODEL_ID.
 // Recorder and Runner can be configured independently via RECORDER_MODEL_ID and RUNNER_MODEL_ID.
-export const defaultModelId = "google/gemini-2.5-flash";
+export const defaultModelId = "x-ai/grok-4-fast:free";
 export const modelId = Deno.env.get("MODEL_ID") ?? defaultModelId;
 
 export const recorderModelId = Deno.env.get("RECORDER_MODEL_ID") ?? modelId;

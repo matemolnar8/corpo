@@ -1,0 +1,50 @@
+{
+  "name": "commuting4_excel_fixed",
+  "createdAt": "2025-09-16T20:34:05.607Z",
+  "steps": [
+    {
+      "instruction": "Store 2025-08 in a variable called year_month",
+      "reproduction": "Store 2025-08 in a variable called year_month."
+    },
+    {
+      "instruction": "Open https://genesys.okta.com",
+      "reproduction": "Navigate to \"https://genesys.okta.com\""
+    },
+    {
+      "instruction": "Fill the username and password fields with the okta secrets",
+      "reproduction": "browser_fill_form(fields=[{\"name\": \"Username\", \"ref\": \"e26\", \"type\": \"textbox\", \"value\": \"{{secret.okta_email}}\"}, {\"name\": \"Password\", \"ref\": \"e31\", \"type\": \"textbox\", \"value\": \"{{secret.okta_password}}\"}])"
+    },
+    {
+      "instruction": "Click Sign in. Wait for \"Cloudbooking\" text to appear",
+      "reproduction": "1. Click the \"Sign In\" button.\n`snapshot_get_and_filter(filter={\"role\": \"button\", \"text\": {\"equals\": \"Sign In\"}}, storeInVariable=\"sign_in_button\")`\n`browser_click(element=\"Sign In button\", ref=sign_in_button.json[0].ref)`\n2. Wait for the text \"Cloudbooking\" to appear.\n`browser_wait_for(text=\"Cloudbooking\")`"
+    },
+    {
+      "instruction": "Click the Cloudbooking tile",
+      "reproduction": "1. Find a link with text containing \"Cloudbooking\" and click it.\n`snapshot_get_and_filter(filter={\"text\": {\"contains\": \"Cloudbooking\"}, \"role\": \"link\"}, storeInVariable=\"cloudbooking_link\")`\n`browser_click(element=\"Cloudbooking link\", ref=cloudbooking_link.json[0].ref)`"
+    },
+    {
+      "instruction": "Switch to the cloudbooking tab",
+      "reproduction": "1. List open tabs. `browser_tabs(action=\"list\")`\n2. Select the \"Cloudbooking\" tab. `browser_tabs(action=\"select\", index=1)`"
+    },
+    {
+      "instruction": "Open \"My Bookings\"",
+      "reproduction": "1. Find a cell with text \"My Bookings\" and click it. `snapshot_get_and_filter(filter={\"role\": \"cell\", \"text\": {\"equals\": \"My Bookings\"}}, storeInVariable=\"my_bookings_cell\")` `browser_click(element=\"My Bookings cell\", ref=my_bookings_cell.json[0].ref)`"
+    },
+    {
+      "instruction": "Set the view to show Past bookings",
+      "reproduction": "1. Select the \"Past\" option from the fourth combobox on the page. `snapshot_get_and_filter(filter={\"role\": \"combobox\"}, storeInVariable=\"comboboxes\")` `browser_select_option(element=\"combobox\", ref=comboboxes.json[3].ref, values=[\"Past\"])`"
+    },
+    {
+      "instruction": "Find all the rows that contain the year in the year_month variable, then filter them for the month. Save them into a new variable",
+      "reproduction": "1. Retrieve the `year_month` variable to get the year and month for filtering. `retrieve_variable(name=\"year_month\")`\n2. Take a snapshot of the current page and save it to a variable named `page_snapshot`. `browser_snapshot_and_save(variable=\"page_snapshot\")`\n3. Filter the snapshot to find all rows containing the year from the `year_month` variable and save the result to a variable named `rows_with_year`. `snapshot_get_and_filter(variable=\"page_snapshot\", filter={\"role\": \"row\", \"text\": {\"contains\": \"2025\"}}, storeInVariable=\"rows_with_year\")`\n4. Further filter the `rows_with_year` variable to find rows that also contain the month from the `year_month` variable, and save the result to a new variable named `filtered_rows`. `snapshot_filter_json(variable=\"rows_with_year\", filter={\"text\": {\"contains\": \"Aug\"}}, storeInVariable=\"filtered_rows\")`"
+    },
+    {
+      "instruction": "List all of the days in End date from filtered_rows",
+      "reproduction": "1. Retrieve the `filtered_rows` variable.\n2. For each row in the `filtered_rows` JSON, extract the day from the last date in the `text` attribute.\n3. Print each day on a new line."
+    },
+    {
+      "instruction": "Fill the 'commuting' excel template with this data. Use 120 for distance and 3600 for cost",
+      "reproduction": "1. Create a JSON object with a \"bookings\" key, which is a list of objects. For each booking in the 'filtered_rows' variable, create an object with the \"day\" (in yyyy-mm-dd format), \"distance\" (120), and \"cost\" (3600).\n2. Use the excel_fill_template tool with the 'commuting' template and the created JSON data."
+    }
+  ]
+}

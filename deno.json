@@ -3,22 +3,34 @@
     "run-cli": {
       "env": true,
       "net": true,
-      "read": ["./workflows", "./secrets.json"],
-      "write": ["./workflows"],
+      "read": ["./workflows", "./secrets.json", "./templates"],
+      "write": ["./workflows", "./output"],
       "run": { "allow": ["npx"] }
     },
     "evals": {
       "env": true,
       "net": true,
-      "read": ["./workflows", "./secrets.json", "./evals"],
-      "write": ["./workflows", "./evals"],
+      "read": [
+        "./workflows",
+        "./secrets.json",
+        "./evals",
+        "./output",
+        "./templates"
+      ],
+      "write": ["./workflows", "./evals", "./output"],
       "run": { "allow": ["deno", "npx"] }
     },
     "test": {
       "env": true,
       "net": true,
-      "read": ["./workflows", "./secrets.json", "./resources", "./src"],
-      "write": ["./workflows"],
+      "read": [
+        "./workflows",
+        "./secrets.json",
+        "./resources",
+        "./src",
+        "./templates"
+      ],
+      "write": ["./workflows", "./output"],
       "run": { "allow": ["npx"] }
     }
   },
@@ -47,6 +59,8 @@
     "@std/yaml": "jsr:@std/yaml@^1.0.9",
     "ai": "npm:ai@^5.0.28",
     "commander": "npm:commander@^14.0.0",
+    "xlsx-template": "npm:xlsx-template@^1.4.4",
+    "xlsx": "npm:xlsx@^0.18.5",
     "zod": "npm:zod@^4.1.5"
   },
   "fmt": {

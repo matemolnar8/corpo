@@ -17,6 +17,7 @@ import { snapshotFilterJsonTool, snapshotGetAndFilterTool } from "./tools/snapsh
 import { input, select } from "./cli_prompts.ts";
 import { recorderModel, stopWhen } from "./model.ts";
 import { listSecretsTool, loadSecrets } from "./tools/secret.ts";
+import { excelFillTemplateTool, excelGetDefinitionTool } from "./tools/excel/fill-template.ts";
 
 export class WorkflowRecorder {
   constructor(private mcp: PlaywrightMCP) {}
@@ -33,6 +34,8 @@ export class WorkflowRecorder {
       snapshot_filter_json: snapshotFilterJsonTool,
       list_variables: listVariablesTool,
       list_secrets: listSecretsTool,
+      excel_fill_template: excelFillTemplateTool,
+      excel_get_definition: excelGetDefinitionTool,
     };
 
     logger.info("Recorder", `Exposed tools: ${Object.keys(allTools).join(", ") || "<none>"}`);

@@ -15,6 +15,7 @@ import { userInputTool } from "./tools/user-input.ts";
 import { listVariablesTool, retrieveVariableTool, storeVariableTool } from "./tools/variable.ts";
 import { snapshotFilterJsonTool, snapshotGetAndFilterTool } from "./tools/snapshot.ts";
 import { listSecretsTool } from "./tools/secret.ts";
+import { excelFillTemplateTool, excelGetDefinitionTool } from "./tools/excel/fill-template.ts";
 import { green } from "@std/fmt/colors";
 import { input, select } from "./cli_prompts.ts";
 import { runnerModel, stopWhen } from "./model.ts";
@@ -57,6 +58,8 @@ export class WorkflowRunner {
       list_secrets: listSecretsTool,
       snapshot_get_and_filter: snapshotGetAndFilterTool,
       snapshot_filter_json: snapshotFilterJsonTool,
+      excel_fill_template: excelFillTemplateTool,
+      excel_get_definition: excelGetDefinitionTool,
     };
     logger.info("Runner", `Exposed tools: ${Object.keys(allTools).join(", ") || "<none>"}`);
 
