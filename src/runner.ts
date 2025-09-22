@@ -74,6 +74,22 @@ export class WorkflowRunner {
     logger.info("Runner", `Prompt variant: ${promptVariantName}`);
     logger.debug("Runner", `System prompt: ${systemPrompt}`);
 
+    const failWithPartial = (message: string, rawText: string | undefined) => {
+      const elapsedMs = Date.now() - startTimeMs;
+      logTokenUsageSummary("Runner", tokenSummary);
+      const partial: WorkflowRunResult = {
+        workflowName: wf.name,
+        steps: wf.steps.length,
+        autoMode,
+        elapsedMs,
+        tokenSummary,
+        finalText: (rawText ?? "") || undefined,
+        attemptsPerStep,
+        promptVariant: promptVariantName,
+      };
+      throw new WorkflowRunError(partial, message);
+    };
+
     for (let i = 0; i < wf.steps.length; i += 1) {
       const step = wf.steps[i];
       logger.info("Runner", `Step ${i + 1}/${wf.steps.length}`);
@@ -151,37 +167,13 @@ ${refinement ? `\nRefinement: ${refinement}` : ""}
               logger.error("Runner", message);
               // Record attempts before failing
               attemptsPerStep.push(attempts);
-              const elapsedMs = Date.now() - startTimeMs;
-              logTokenUsageSummary("Runner", tokenSummary);
-              const partial: WorkflowRunResult = {
-                workflowName: wf.name,
-                steps: wf.steps.length,
-                autoMode,
-                elapsedMs,
-                tokenSummary,
-                finalText: rawText || undefined,
-                attemptsPerStep,
-                promptVariant: promptVariantName,
-              };
-              throw new WorkflowRunError(partial, message);
+              failWithPartial(message, rawText);
             } else if (attempts >= maxAttempts) {
               const message = `[Auto Mode] Step ${i + 1} failed after ${maxAttempts} attempts`;
               logger.error("Runner", message);
               // Record attempts before failing
               attemptsPerStep.push(attempts);
-              const elapsedMs = Date.now() - startTimeMs;
-              logTokenUsageSummary("Runner", tokenSummary);
-              const partial: WorkflowRunResult = {
-                workflowName: wf.name,
-                steps: wf.steps.length,
-                autoMode,
-                elapsedMs,
-                tokenSummary,
-                finalText: rawText || undefined,
-                attemptsPerStep,
-                promptVariant: promptVariantName,
-              };
-              throw new WorkflowRunError(partial, message);
+              failWithPartial(message, rawText);
             } else {
               logger.warn("Runner", `[Auto Mode] Step ${i + 1} incomplete, retrying...`);
               // Add a small delay between attempts
@@ -227,19 +219,7 @@ ${refinement ? `\nRefinement: ${refinement}` : ""}
               const message = "Workflow aborted by user";
               // Record attempts before failing
               attemptsPerStep.push(attempts);
-              const elapsedMs = Date.now() - startTimeMs;
-              logTokenUsageSummary("Runner", tokenSummary);
-              const partial: WorkflowRunResult = {
-                workflowName: wf.name,
-                steps: wf.steps.length,
-                autoMode,
-                elapsedMs,
-                tokenSummary,
-                finalText: rawText || undefined,
-                attemptsPerStep,
-                promptVariant: promptVariantName,
-              };
-              throw new WorkflowRunError(partial, message);
+              failWithPartial(message, rawText);
             }
           }
         }
