@@ -1,12 +1,11 @@
-import { GenerateTextResult } from "ai";
+import { GenerateTextResult, type ToolSet } from "ai";
 import { disconnectPlaywrightMCP } from "./tools/mcp/playwright-mcp.ts";
 import { getLogLevel, logger, stringifySmall } from "./log.ts";
 import { WorkflowStep } from "./workflows.ts";
 
 // Shared utility function for printing AI-SDK model results
-export function printModelResult(
-  // deno-lint-ignore no-explicit-any
-  result: GenerateTextResult<any, any>,
+export function printModelResult<TTools extends ToolSet, TOutput>(
+  result: GenerateTextResult<TTools, TOutput>,
   context: string,
 ): void {
   // Always log basic info
@@ -85,8 +84,10 @@ export function initTokenUsageSummary(): TokenUsageSummary {
   return { inputTokens: 0, outputTokens: 0, totalTokens: 0, calls: 0 };
 }
 
-// deno-lint-ignore no-explicit-any
-export function accumulateTokenUsage(summary: TokenUsageSummary, result: GenerateTextResult<any, any>): void {
+export function accumulateTokenUsage<TTools extends ToolSet, TOutput>(
+  summary: TokenUsageSummary,
+  result: GenerateTextResult<TTools, TOutput>,
+): void {
   const input = result.totalUsage?.inputTokens ?? 0;
   const output = result.totalUsage?.outputTokens ?? 0;
   const total = result.totalUsage?.totalTokens ?? (input + output);
