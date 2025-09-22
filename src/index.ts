@@ -2,7 +2,7 @@ import { Command } from "commander";
 import { WorkflowRecorder } from "./recorder.ts";
 import { WorkflowRunner } from "./runner.ts";
 import { exit } from "./utils.ts";
-import { setLogLevel } from "./log.ts";
+import { logger, setLogLevel } from "./log.ts";
 import { connectPlaywrightMCP } from "./tools/mcp/playwright-mcp.ts";
 import { resetVariables } from "./tools/variable.ts";
 
@@ -60,7 +60,8 @@ program
     try {
       await runner.run(name, false);
       await exit();
-    } catch (_) {
+    } catch (e) {
+      logger.error("CLI", e instanceof Error ? (e.stack || e.message) : String(e));
       await exit(1);
     }
   });
@@ -75,7 +76,8 @@ program
     try {
       await runner.run(name, true);
       await exit();
-    } catch (_) {
+    } catch (e) {
+      logger.error("CLI", e instanceof Error ? (e.stack || e.message) : String(e));
       await exit(1);
     }
   });
