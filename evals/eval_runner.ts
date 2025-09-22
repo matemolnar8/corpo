@@ -1,4 +1,5 @@
 import { modelId } from "../src/model.ts";
+import { logger } from "../src/log.ts";
 import { WorkflowRunError, WorkflowRunner, WorkflowRunResult } from "../src/runner.ts";
 import { connectPlaywrightMCP, disconnectPlaywrightMCP } from "../src/tools/mcp/playwright-mcp.ts";
 import { resetVariables } from "../src/tools/variable.ts";
@@ -55,7 +56,7 @@ export async function runEval(config: EvalConfig): Promise<EvalRunSummary> {
       promptVariant: result.promptVariant,
     };
   } catch (e) {
-    console.error(e);
+    logger.error("Eval", e instanceof Error ? (e.stack || e.message) : String(e));
     if (e instanceof WorkflowRunError) {
       return {
         pass: false,
@@ -101,7 +102,7 @@ if (import.meta.main) {
   Deno.env.set("CORPO_EVAL_MODE", "1");
   const evalName = (parsed._[0] as string | undefined) ?? undefined;
   if (!evalName) {
-    console.log("Usage: deno task eval <evalName> [--repeat=N]");
+    logger.info("Eval", "Usage: deno task eval <evalName> [--repeat=N]");
     await exit(2);
     throw new Error("Unreachable");
   }
@@ -118,7 +119,7 @@ if (import.meta.main) {
     (mod as Partial<{ config: unknown; default: unknown }>).default;
 
   if (!isEvalConfig(candidate)) {
-    console.error(`Eval '${evalName}' did not export a valid EvalConfig (expected 'config' or default export).`);
+    logger.error("Eval", `Eval '${evalName}' did not export a valid EvalConfig (expected 'config' or default export).`);
     await exit(2);
     throw new Error("Unreachable");
   }
@@ -130,7 +131,8 @@ if (import.meta.main) {
   for (let i = 0; i < repeat; i += 1) {
     const summary = await runEval(config);
     const status = summary.pass ? "PASS" : "FAIL";
-    console.log(
+    logger.info(
+      "Eval",
       JSON.stringify(
         {
           run: i + 1,

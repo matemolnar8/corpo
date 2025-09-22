@@ -1,14 +1,15 @@
 import { parseArgs } from "@std/cli/parse-args";
+import { logger } from "../src/log.ts";
 
 // Edit this array to control which models are evaluated.
 const MODELS: string[] = [
-  "anthropic/claude-3.7-sonnet",
-  "anthropic/claude-sonnet-4",
-  "google/gemini-2.5-flash",
-  "google/gemini-2.5-pro",
-  "moonshotai/kimi-k2-0905",
+  // "anthropic/claude-3.7-sonnet",
+  // "anthropic/claude-sonnet-4",
+  // "google/gemini-2.5-flash",
+  // "google/gemini-2.5-pro",
+  // "moonshotai/kimi-k2-0905",
   "x-ai/grok-4-fast:free",
-  "openai/gpt-5-mini",
+  // "openai/gpt-5-mini",
   // "x-ai/grok-3-mini",
   // "openai/gpt-5",
   // "openai/gpt-oss-120b",
@@ -30,7 +31,7 @@ function parseBatchArgs(): ParsedArgs {
   const parsed = parseArgs(Deno.args, { string: ["repeat"], alias: { r: "repeat" } });
   const evalName = (parsed._[0] as string | undefined) ?? undefined;
   if (!evalName) {
-    console.error("Usage: deno task batch-eval <evalName> [--repeat=N]");
+    logger.info("Eval", "Usage: deno task batch-eval <evalName> [--repeat=N]");
     Deno.exit(2);
   }
   const repeat = Math.max(1, Number.parseInt((parsed.repeat as string | undefined) ?? "1", 10) || 1);
@@ -76,10 +77,10 @@ if (import.meta.main) {
   let anyFail = false;
   for (const variant of promptVariants) {
     for (const model of MODELS) {
-      console.log("");
-      console.log("============================================================");
-      console.log(`Running eval '${evalName}' with model '${model}' (repeat=${repeat}) variant='${variant}'`);
-      console.log("============================================================");
+      logger.info("Eval", "");
+      logger.info("Eval", "============================================================");
+      logger.info("Eval", `Running eval '${evalName}' with model '${model}' (repeat=${repeat}) variant='${variant}'`);
+      logger.info("Eval", "============================================================");
       const code = await runEvalOnceForModel(evalName, model, repeat, variant);
       if (code !== 0) anyFail = true;
     }

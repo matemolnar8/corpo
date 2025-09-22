@@ -1,3 +1,4 @@
+import { logger } from "../src/log.ts";
 // Simple server to host the eval viewer and expose results via HTTP
 // Usage: deno run --allow-net --allow-read=./evals evals/server.ts
 
@@ -87,7 +88,7 @@ Deno.serve(async (req) => {
     if (err instanceof Deno.errors.NotFound) {
       return new Response("Not found", { status: 404 });
     }
-    console.error(err);
+    logger.error("EvalServer", err instanceof Error ? (err.stack || err.message) : String(err));
     return new Response("Internal Server Error", { status: 500 });
   }
 });
