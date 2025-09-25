@@ -5,6 +5,7 @@ import { excelFillTemplateTool, excelGetDefinitionTool, fillTemplate } from "./f
 Deno.test("fillTemplate", async () => {
   const template = "commuting";
   const data = {
+    yearMonth: "2025-01",
     bookings: [{
       day: "2025-01-01",
       distance: 120,
@@ -28,6 +29,7 @@ Deno.test("fillTemplate", async () => {
 Deno.test("excel_fill_template infers definition and sheet, accepts inline object", async () => {
   const template = "commuting";
   const data = {
+    yearMonth: "2025-01",
     bookings: [
       { day: "2025-01-10", distance: 10, cost: 300, empty: "" },
       { day: "2025-01-11", distance: 12, cost: 360, empty: "" },
@@ -41,6 +43,44 @@ Deno.test("excel_fill_template infers definition and sheet, accepts inline objec
   }, { messages: [], toolCallId: crypto.randomUUID() });
 
   expect((res as { success: boolean }).success).toBe(true);
+});
+
+Deno.test("excel_fill_template rejects non-array bookings section", async () => {
+  const template = "commuting";
+  const badData = {
+    yearMonth: "2025-01",
+    bookings: { day: "2025-01-10", distance: 10, cost: 300, empty: "" },
+  } as const;
+
+  const res = await excelFillTemplateTool.execute!({
+    template,
+    data: badData as unknown as Record<string, unknown>,
+    outputFile: "output/commuting-test.xlsx",
+  }, { messages: [], toolCallId: crypto.randomUUID() });
+
+  const out = res as { success: boolean; reason?: string };
+  expect(out.success).toBe(false);
+  expect(out.reason).toContain("data.bookings must be an array");
+});
+
+Deno.test("excel_fill_template rejects non-scalar yearMonth section", async () => {
+  const template = "commuting";
+  const badData = {
+    yearMonth: ["2025-01"],
+    bookings: [
+      { day: "2025-01-10", distance: 10, cost: 300, empty: "" },
+    ],
+  } as const;
+
+  const res = await excelFillTemplateTool.execute!({
+    template,
+    data: badData as unknown as Record<string, unknown>,
+    outputFile: "output/commuting-test.xlsx",
+  }, { messages: [], toolCallId: crypto.randomUUID() });
+
+  const out = res as { success: boolean; reason?: string };
+  expect(out.success).toBe(false);
+  expect(out.reason).toContain("data.yearMonth must be a scalar");
 });
 
 Deno.test("excel_get_definition returns definition and example skeleton", async () => {

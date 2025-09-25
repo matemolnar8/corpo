@@ -78,7 +78,8 @@ const excelFillOutputSchema = z.object({
   reason: z.string().optional(),
 });
 
-type ExcelDefinition = Record<string, Record<string, Record<string, string>>>;
+type ExcelSectionDefinition = string | Record<string, string> | Array<Record<string, string>>;
+type ExcelDefinition = Record<string, Record<string, ExcelSectionDefinition>>;
 
 function ensureArrayOfObjects(value: unknown, context: string): Array<Record<string, unknown>> {
   if (!Array.isArray(value)) {
@@ -94,6 +95,16 @@ function ensureArrayOfObjects(value: unknown, context: string): Array<Record<str
   return arr;
 }
 
+function isAllowedScalarValue(value: unknown): boolean {
+  return (
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean" ||
+    value === null ||
+    value === undefined
+  );
+}
+
 function validateDataAgainstDefinition(args: {
   definition: ExcelDefinition;
   sheetName: string;
@@ -105,10 +116,39 @@ function validateDataAgainstDefinition(args: {
     throw new Error(`Sheet '${sheetName}' not found in definition`);
   }
 
-  for (const [sectionName, fields] of Object.entries(sheetDef)) {
+  for (const [sectionName, sectionDefinition] of Object.entries(sheetDef)) {
     const sectionValue = (data as Record<string, unknown>)[sectionName];
+
+    // Scalar section: definition is a string description
+    if (typeof sectionDefinition === "string") {
+      if (!isAllowedScalarValue(sectionValue)) {
+        throw new Error(
+          `data.${sectionName} must be a scalar (string | number | boolean | null | undefined)`,
+        );
+      }
+      continue;
+    }
+
+    // Array section: definition is an array (usually length 1) describing fields of each row
+    let fieldsObject: Record<string, string> | undefined;
+    if (Array.isArray(sectionDefinition)) {
+      if (sectionDefinition.length === 0) {
+        // No fields described; allow empty arrays only
+        if (sectionValue === undefined) continue;
+        const rows = ensureArrayOfObjects(sectionValue, `data.${sectionName}`);
+        if (rows.length > 0) {
+          throw new Error(`'${sectionName}' has no described fields but rows were provided`);
+        }
+        continue;
+      }
+      fieldsObject = sectionDefinition[0] || {};
+    } else if (sectionDefinition && typeof sectionDefinition === "object") {
+      // Be permissive: if object provided directly, treat as row fields
+      fieldsObject = sectionDefinition as Record<string, string>;
+    }
+
     const rows = ensureArrayOfObjects(sectionValue, `data.${sectionName}`);
-    const requiredFieldNames = Object.keys(fields);
+    const requiredFieldNames = Object.keys(fieldsObject || {});
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       for (const f of requiredFieldNames) {
@@ -116,9 +156,7 @@ function validateDataAgainstDefinition(args: {
           throw new Error(`Row ${i} of '${sectionName}' is missing field '${f}'`);
         }
         const v = row[f];
-        const isAllowedScalar = typeof v === "string" || typeof v === "number" || typeof v === "boolean" ||
-          v === null || v === undefined;
-        if (!isAllowedScalar) {
+        if (!isAllowedScalarValue(v)) {
           throw new Error(
             `Row ${i} of '${sectionName}' field '${f}' must be string | number | boolean | null | undefined`,
           );
@@ -270,12 +308,24 @@ const excelGetDefinitionOutputSchema = z.object({
 function buildExampleSkeletonForSheet(definition: ExcelDefinition, sheet: string): Record<string, unknown> {
   const sheetDef = definition[sheet] || {};
   const data: Record<string, unknown> = {};
-  for (const [sectionName, fields] of Object.entries(sheetDef)) {
-    const row: Record<string, unknown> = {};
-    for (const fieldName of Object.keys(fields)) {
-      row[fieldName] = "";
+  for (const [sectionName, sectionDefinition] of Object.entries(sheetDef)) {
+    if (typeof sectionDefinition === "string") {
+      // Scalar example
+      data[sectionName] = "";
+    } else if (Array.isArray(sectionDefinition)) {
+      const first = sectionDefinition[0] || {};
+      const row: Record<string, unknown> = {};
+      for (const fieldName of Object.keys(first)) {
+        row[fieldName] = "";
+      }
+      data[sectionName] = [row];
+    } else if (sectionDefinition && typeof sectionDefinition === "object") {
+      const row: Record<string, unknown> = {};
+      for (const fieldName of Object.keys(sectionDefinition)) {
+        row[fieldName] = "";
+      }
+      data[sectionName] = [row];
     }
-    data[sectionName] = [row];
   }
   return data;
 }
@@ -298,7 +348,7 @@ export const excelGetDefinitionTool = tool({
       }
 
       const sheets = Object.keys(defObj);
-      const fieldsBySheet: Record<string, Record<string, Record<string, string>>> = {};
+      const fieldsBySheet: Record<string, Record<string, ExcelSectionDefinition>> = {};
       for (const s of sheets) fieldsBySheet[s] = defObj[s] || {};
 
       // Decide which sheet to produce example for

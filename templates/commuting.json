@@ -1,10 +1,13 @@
 {
   "Sheet 1": {
-    "bookings": {
-      "day": "Day of the booking (YYYY-MM-DD)",
-      "distance": "Distance of the booking (km)",
-      "cost": "Cost of the booking (Ft)",
-      "empty": "Empty string to fill the cells"
-    }
+    "bookings": [
+      {
+        "day": "Day of the booking (YYYY-MM-DD)",
+        "distance": "Distance of the booking (km)",
+        "cost": "Cost of the booking (Ft)",
+        "empty": "Empty string to fill the cells"
+      }
+    ],
+    "yearMonth": "Year and month of the booking list (YYYY-MM)"
   }
 }
